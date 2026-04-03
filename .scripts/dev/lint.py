@@ -6,7 +6,7 @@
 """
 Code quality check script.
 
-Runs Ruff format and Ruff check on the codebase.
+Runs Ruff on the codebase.
 
 Usage:
     python .scripts/dev/lint.py [options]
@@ -37,7 +37,7 @@ from rich.text import Text
 # VARIABLES
 # ///////////////////////////////////////////////////////////////
 
-project_name = "flash-excel"
+project_name = "Flash-Excel"
 
 # ///////////////////////////////////////////////////////////////
 # CLASSES
@@ -71,7 +71,7 @@ class CodeQualityChecker:
         self.project_root = Path(__file__).resolve().parents[2]
         # Directories to scan (relative to project root)
         self.scan_dirs = [
-            "src/flash_excel",
+            f"src/{project_name.lower().replace('-', '_')}",
             "tests",
             ".scripts",
         ]
@@ -93,8 +93,7 @@ class CodeQualityChecker:
                 scan_paths.append(scan_path)
             elif self.verbose:
                 self.console.print(
-                    f"  [yellow]⚠[/yellow]  Warning: {scan_path}"
-                    " does not exist, skipping..."
+                    f"  [yellow]⚠[/yellow]  Warning: {scan_path} does not exist, skipping..."
                 )
         return scan_paths
 
@@ -133,8 +132,7 @@ class CodeQualityChecker:
                 self.console.print(result.stdout)
 
             self.console.print(
-                "[green]✓[/green] [green]SUCCESS:[/green] "
-                f"{description} completed successfully"
+                f"[green]✓[/green] [green]SUCCESS:[/green] {description} completed successfully"
             )
             return True
 
@@ -178,7 +176,7 @@ class CodeQualityChecker:
             return False
         except FileNotFoundError:
             self.console.print(
-                "[yellow]⚠[/yellow]  import-linter not found — skipping (install with: pip install import-linter)"
+                "[yellow]⚠[/yellow]  import-linter not found — skipping (install with: uv add --dev import-linter)"
             )
             return True
         else:
@@ -219,7 +217,7 @@ class CodeQualityChecker:
             return False
         except FileNotFoundError:
             self.console.print(
-                "[yellow]⚠[/yellow]  ty not found — skipping (install with: pip install ty)"
+                "[yellow]⚠[/yellow]  ty not found — skipping (install with: uv add --dev ty)"
             )
             return True
         else:
@@ -356,9 +354,9 @@ def main() -> None:
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
-    python .scripts/dev/lint.py              # Fix all issues
-    python .scripts/dev/lint.py --check-only # Only check, don't fix
-    python .scripts/dev/lint.py --verbose    # Verbose output
+  python .scripts/dev/lint.py              # Fix all issues
+  python .scripts/dev/lint.py --check-only # Only check, don't fix
+  python .scripts/dev/lint.py --verbose    # Verbose output
         """,
     )
 

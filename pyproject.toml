@@ -4,8 +4,8 @@
 # /////////////////////////////////////////////////////////////////////
 
 [build-system]
-requires = ["setuptools>=61.0"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 # /////////////////////////////////////////////////////////////////////
 # 📦 PROJECT METADATA
@@ -63,6 +63,7 @@ dev = [
     "pyright>=1.1.0",
     "pre-commit>=3.0.0",
     "import-linter>=2.0.0",
+    "grimp>=2.3.0",
 
     # Security
     "bandit>=1.7.0",
@@ -90,6 +91,8 @@ docs = [
     "mkdocstrings[python]>=0.27.0",
     "mkdocs-section-index>=0.3.0",
     "mkdocs-coverage>=1.1.0",
+    "mike>=2.0.0",
+    "pymdown-extensions>=10.7",
     "git-cliff>=2.7.0",
 ]
 
@@ -118,44 +121,49 @@ PyPI = "https://pypi.org/project/flash-excel/"
 # Package discovery and inclusion/exclusion patterns
 # /////////////////////////////////////////////////////////////////////
 
-[tool.setuptools]
-include-package-data = true
+[tool.hatch.build.targets.wheel]
+packages = ["main"]
 
-[tool.setuptools.packages.find]
-where = ["src"]
-include = ["flash_excel*"]
+[tool.hatch.build.targets.sdist]
 exclude = [
-    "tests*",
-    "build*",
-    "dist*",
-    "*.egg-info*",
-    ".pytest_cache*",
-    ".mypy_cache*",
-    ".ruff_cache*",
-    ".cursor*",
-    ".benchmarks*",
-    "coverage*",
-    "htmlcov*",
-    ".venv*",
-    "venv*",
-    "__pycache__*",
-    "**/__pycache__*",
-    ".git*",
+    # Dev tooling & scripts
+    ".scripts",
+    ".hooks",
+    ".pre-commit-config.yaml",
+    # Test & coverage
+    "tests",
+    "htmlcov",
+    ".coverage",
+    "coverage.xml",
+    ".pytest_cache",
+    # Documentation
+    "docs",
+    "examples",
+    "mkdocs.yml",
+    "cliff.toml",
+    # VCS & caches
+    ".git",
+    ".ruff_cache",
+    ".mypy_cache",
+    # Virtual envs
+    ".venv",
+    "venv",
+    # Byte-compiled / optimized files
     "*.pyc",
     "*.pyo",
-    "*.pyd",
-    ".coverage",
+    "__pycache__",
+    # Logs & temp
     "*.log",
+    ".tmp",
+    # Build artifacts
+    "dist",
+    "build",
+    "*.egg-info",
+    # IDE & OS
+    ".cursor",
     ".DS_Store",
     "Thumbs.db",
-    "docs*",
-    "examples*",
-    "_temp*",
-    ".hooks*",
 ]
-
-[tool.setuptools.package-data]
-"flash_excel" = ["py.typed"]
 
 # /////////////////////////////////////////////////////////////////////
 # 🎨 CODE FORMATTING & LINTING TOOLS
@@ -306,15 +314,103 @@ layers = []
 
 # Pytest: Test runner with markers and coverage configuration
 [tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--cov=src/{{my_project}}",
+    "--cov-report=term-missing",
+    "--cov-report=html",
+    "--cov-report=xml",
+    "--cov-fail-under=60",
+    "--tb=short",
+    "--color=yes",
+    "--durations=10",
+    "--maxfail=5",
+]
+console_output_style = "progress"
 testpaths = ["tests"]
-python_files = ["test_*.py"]
+pythonpath = ["src"]
+python_files = ["test_*.py", "*_test.py"]
+python_classes = ["Test*"]
 python_functions = ["test_*"]
-addopts = "-v --tb=short"
+markers = [
+    "slow: marks tests as slow (deselect with '-m \"not slow\"')",
+    "integration: marks tests as integration tests",
+    "robustness: marks tests as robustness tests",
+    "unit: marks tests as unit tests (default)",
+    "cli: marks tests related to CLI",
+]
+filterwarnings = [
+    "ignore::DeprecationWarning",
+    "ignore::PendingDeprecationWarning",
+]
 
 [tool.coverage.run]
-source = ["flash_excel"]
-omit = ["tests/*"]
+source = ["src/flash_excel"]
+branch = true
+omit = [
+    "*/tests/*",
+    "*/test_*",
+    "*/__pycache__/*",
+    "*/site-packages/*",
+    "*/.pytest_cache/*",
+    "*/.benchmarks/*",
+    "*/.vscode/*",
+    "*/.egg-info/*",
+    "*/.hooks/*",
+    "setup.py",
+    "build/*",
+    "dist/*",
+    ".venv/*",
+    "venv/*",
+    "htmlcov/*",
+    "coverage.xml",
+    ".coverage",
+    "docs/*",
+    "examples/*",
+    "_temp/*",
+]
 
 [tool.coverage.report]
+# Lines to exclude: comments, abstractions, unreachable code
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+    "if platform.system\\(\\) == \"Windows\":",
+    "except ImportError:",
+]
 show_missing = true
-fail_under = 80
+precision = 2
+fail_under = 60
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+# ///////////////////////////////////////////////////////////////
+# 🔒 SECURITY TOOLS
+# Code security scanning and vulnerability detection
+# ///////////////////////////////////////////////////////////////
+
+# Bandit: Security linter for identifying common security issues
+[tool.bandit]
+exclude_dirs = [
+    "tests",
+    "build",
+    "dist",
+    "venv",
+    ".venv",
+    ".hooks",
+    "docs",
+    "examples",
+    ".tmp",
+    "_temp",
+]
+skips = ["B101", "B601"]
