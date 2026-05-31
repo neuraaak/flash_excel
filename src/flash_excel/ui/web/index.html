@@ -56,6 +56,7 @@
     import { createApp } from './js/vendor/vue.esm-browser.prod.js';
     import AppShell     from './js/components/AppShell.js';
     import PresetsPage  from './js/pages/Presets.js';
+    import { i18n }     from './js/i18n.js';
 
     // Tokens CSS appliqués depuis une palette YAML
     const THEME_TOKENS = [
@@ -74,6 +75,7 @@
         ]);
         if (!cfgRes.ok || !themesRes.ok) return;
         const { palette, mode } = cfgRes.data.appearance;
+        i18n.setLocale(cfgRes.data.locale ?? 'en');
         const tokens = themesRes.data[palette]?.[mode];
         if (!tokens) return;
         const root = document.documentElement;
@@ -98,7 +100,7 @@
         },
       },
       provide() {
-        return { navigate: this.navigate, showToast: this.showToast };
+        return { navigate: this.navigate, showToast: this.showToast, i18n };
       },
       template: `
         <AppShell :currentPage="currentPage" @navigate="navigate">
