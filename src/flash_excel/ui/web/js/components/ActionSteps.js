@@ -10,15 +10,15 @@ import SortTable        from './tables/SortTable.js';
 import ReorderTable     from './tables/ReorderTable.js';
 
 const STEPS = [
-  { action: 'rename_columns',      label: 'Rename columns',      desc: 'Rename one or more columns.' },
-  { action: 'select_columns',      label: 'Select columns',      desc: 'Keep only selected columns.' },
-  { action: 'cast_types',          label: 'Cast types',          desc: 'Convert column data types.' },
-  { action: 'replace_values',      label: 'Replace values',      desc: 'Replace exact values in a column.' },
-  { action: 'trim_whitespace',     label: 'Clean text',          desc: 'Strip leading/trailing whitespace.' },
-  { action: 'add_computed_column', label: 'Add computed column', desc: 'Create a column from an expression.' },
-  { action: 'filter_rows',         label: 'Filter rows',         desc: 'Keep rows matching conditions.' },
-  { action: 'deduplicate_rows',    label: 'Deduplicate rows',    desc: 'Remove duplicate rows.' },
-  { action: 'sort_rows',           label: 'Sort rows',           desc: 'Sort rows by one or more columns.' },
+  { action: 'rename_columns',      label: 'Rename columns',      desc: 'Give one or more columns a new name.' },
+  { action: 'select_columns',      label: 'Select columns',      desc: 'Keep only the columns you choose.' },
+  { action: 'cast_types',          label: 'Cast types',          desc: 'Convert columns to a target data type.' },
+  { action: 'replace_values',      label: 'Replace values',      desc: 'Find and replace values inside columns.' },
+  { action: 'trim_whitespace',     label: 'Clean text',          desc: 'Trim, normalise and strip whitespace.' },
+  { action: 'add_computed_column', label: 'Add computed column', desc: 'Create a new column from an expression.' },
+  { action: 'filter_rows',         label: 'Filter rows',         desc: 'Keep only rows matching your conditions.' },
+  { action: 'deduplicate_rows',    label: 'Deduplicate rows',    desc: 'Remove duplicate rows by key columns.' },
+  { action: 'sort_rows',           label: 'Sort rows',           desc: 'Order rows by one or more columns.' },
   { action: 'reorder_columns',     label: 'Reorder columns',     desc: 'Change the column order.' },
 ];
 
@@ -58,9 +58,10 @@ export default {
   emits: ['update:payloads'],
   data() { return { activeAction: null, steps: STEPS }; },
   computed: {
-    activeEditor()      { return this.activeAction ? EDITOR_MAP[this.activeAction] : null; },
-    activePayload()     { return this.activeAction ? (this.payloads[this.activeAction] || {}) : {}; },
-    activeStep()        { return this.steps.find(s => s.action === this.activeAction); },
+    activeEditor()  { return this.activeAction ? EDITOR_MAP[this.activeAction] : null; },
+    activePayload() { return this.activeAction ? (this.payloads[this.activeAction] || {}) : {}; },
+    activeStep()    { return this.steps.find(s => s.action === this.activeAction); },
+    activeCount()   { return countPayload(this.activePayload); },
   },
   methods: {
     countFor(action) { return countPayload(this.payloads[action]); },
@@ -69,34 +70,45 @@ export default {
     },
   },
   template: `
-    <div class="action-steps">
-      <!-- Left list -->
-      <div class="action-steps__list">
+    <div class="config">
+
+      <!-- Left: action list -->
+      <div class="action-list">
         <div v-for="s in steps" :key="s.action"
-          class="action-step-item" :class="{ active: activeAction === s.action }"
-          :title="s.desc" @click="activeAction = s.action">
-          <span class="step-dot" :class="countFor(s.action) > 0 ? 'on' : 'off'"></span>
-          <span class="action-step-item__title" :class="{ configured: countFor(s.action) > 0 }">{{ s.label }}</span>
-          <span v-if="countFor(s.action) > 0" class="badge badge--accent">{{ countFor(s.action) }}</span>
-          <span class="badge badge--neutral" style="padding:0 5px;font-size:10px;cursor:help;" :title="s.desc">i</span>
+          class="action-item"
+          :class="{ active: activeAction === s.action, on: countFor(s.action) > 0 }"
+          @click="activeAction = s.action">
+          <span class="ai-status"><span class="ring"></span></span>
+          <span class="ai-name">{{ s.label }}</span>
+          <span v-if="countFor(s.action) > 0" class="ai-count">{{ countFor(s.action) }}</span>
+          <span class="ai-info" :title="s.desc" @click.stop>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 11v5M12 8h.01"/></svg>
+          </span>
         </div>
       </div>
 
-      <!-- Right editor -->
-      <div class="action-steps__editor">
-        <div v-if="!activeAction" style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-secondary);font-size:var(--text-sm);">
+      <!-- Right: config panel -->
+      <div class="panel">
+        <div v-if="!activeAction" class="panel-empty">
           Select an action to configure it
         </div>
         <template v-else>
-          <div style="padding:var(--sp-3);border-bottom:1px solid var(--border-subtle);flex-shrink:0;">
-            <div style="font-size:var(--text-md);font-weight:600;color:var(--text-primary);">{{ activeStep?.label }}</div>
-            <div style="font-size:var(--text-sm);color:var(--text-secondary);margin-top:2px;">{{ activeStep?.desc }}</div>
+          <div class="panel-head">
+            <div class="ph-text">
+              <h3>{{ activeStep.label }}</h3>
+              <p>{{ activeStep.desc }}</p>
+            </div>
+            <span class="ph-count">{{ activeCount }} configured</span>
           </div>
-          <div style="flex:1;overflow:auto;min-height:0;">
-            <component :is="activeEditor" :columns="columns" :payload="activePayload" @update:payload="onPayload" />
+          <div class="panel-body">
+            <component :is="activeEditor"
+              :columns="columns"
+              :payload="activePayload"
+              @update:payload="onPayload" />
           </div>
         </template>
       </div>
+
     </div>
   `,
 };

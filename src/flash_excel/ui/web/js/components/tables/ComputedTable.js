@@ -8,18 +8,24 @@ export default {
   },
   methods: {
     emit() { this.$emit('update:payload', { action: 'add_computed_column', target: this.localTarget, expression: this.localExpression }); },
+    addChip(col) {
+      this.localExpression += (this.localExpression.trim() ? ' ' : '') + 'col("' + col + '")';
+      this.emit();
+    },
   },
   template: `
-    <div style="padding:var(--sp-4);display:flex;flex-direction:column;gap:var(--sp-3);">
-      <div>
-        <label style="display:block;font-size:var(--text-xs);font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary);margin-bottom:var(--sp-1);">New column name</label>
-        <input class="input" style="width:100%;" v-model="localTarget" placeholder="e.g. full_name" @input="emit" />
+    <div>
+      <div class="panel-sub">Computed column</div>
+      <div class="compute-card">
+        <div class="cc-head">
+          <input class="input" v-model="localTarget" placeholder="New column name" @input="emit" />
+        </div>
+        <textarea class="textarea" v-model="localExpression" placeholder='col("first") + " " + col("last")' @input="emit"></textarea>
+        <div class="chips">
+          <span v-for="col in columns" :key="col" class="chip" @click="addChip(col)">{{ col }}</span>
+        </div>
       </div>
-      <div>
-        <label style="display:block;font-size:var(--text-xs);font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--text-secondary);margin-bottom:var(--sp-1);">Expression (Polars)</label>
-        <input class="input" style="width:100%;font-family:var(--font-mono);" v-model="localExpression" placeholder='e.g. col("first") + " " + col("last")' @input="emit" />
-      </div>
-      <p style="font-size:var(--text-xs);color:var(--text-secondary);">Available: {{ columns.join(', ') }}</p>
+      <div class="panel-hint">Use Polars expressions. Reference columns with <code>col("name")</code>, e.g. <code>col("year") * 2</code>.</div>
     </div>
   `,
 };

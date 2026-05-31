@@ -8,21 +8,21 @@ export default {
   inject: ['showToast'],
   data() {
     return {
-      presets:      [],     // [{name, description, step_count, path}]
-      selectedPath: null,
-      isNew:        false,
-      presetName:   '',
-      fileInfo:     null,   // {file_name, size_bytes, file_type, columns}
-      payloads:     {},     // action → payload dict
+      presets:        [],
+      selectedPath:   null,
+      isNew:          false,
+      presetName:     '',
+      fileInfo:       null,
+      presetColumns:  [],
+      payloads:       {},
     };
   },
   computed: {
-    hasSelection()   { return !!this.selectedPath || this.isNew; },
-    sourceColumns()  { return this.fileInfo?.columns || []; },
+    hasSelection()  { return !!this.selectedPath || this.isNew; },
+    sourceColumns() { return this.fileInfo?.columns || this.presetColumns; },
   },
   async created() { await this.loadList(); },
   methods: {
-    // ── List ──────────────────────────────────────────────────────
     async loadList() {
       try { this.presets = await api.getPresets(); }
       catch (e) { this.showToast(`Failed to load presets: ${e.message}`, 'error'); }
@@ -30,11 +30,12 @@ export default {
 
     async selectPreset(path) {
       try {
-        const data    = await api.loadPreset(path);
+        const data = await api.loadPreset(path);
         this.selectedPath = path;
-        this.isNew    = false;
+        this.isNew = false;
         this.presetName = data.name;
         this.fileInfo = null;
+        this.presetColumns = data.source_columns || [];
         this.payloads = {};
         for (const step of data.steps) {
           const { action, ...rest } = step;
@@ -48,7 +49,8 @@ export default {
       try {
         await api.newPreset(name);
         this.isNew = true; this.selectedPath = null;
-        this.presetName = name; this.fileInfo = null; this.payloads = {};
+        this.presetName = name; this.fileInfo = null;
+        this.presetColumns = []; this.payloads = {};
       } catch (e) { this.showToast(`Error: ${e.message}`, 'error'); }
     },
 
@@ -56,7 +58,7 @@ export default {
       if (!this.presetName.trim()) { this.showToast('Preset name cannot be empty', 'error'); return; }
       try {
         const steps = Object.values(this.payloads).filter(p => p && Object.keys(p).length > 1);
-        const res   = await api.savePreset(this.presetName, steps);
+        const res = await api.savePreset(this.presetName, steps);
         this.selectedPath = res.path; this.isNew = false;
         await this.loadList();
         this.showToast('Preset saved');
@@ -83,7 +85,6 @@ export default {
       } catch (e) { this.showToast(`Export failed: ${e.message}`, 'error'); }
     },
 
-    // ── File ──────────────────────────────────────────────────────
     async loadFile() {
       try {
         const res = await api.openFileDialog();
@@ -97,109 +98,89 @@ export default {
       this.fileInfo = null;
     },
 
-    // ── Payloads ──────────────────────────────────────────────────
     onPayloads(p) { this.payloads = p; },
   },
 
   template: `
     <div class="presets-page">
 
-      <!-- Header -->
-      <div class="presets-header">
-        <span class="presets-header__title">Presets</span>
-
-        <button class="btn btn-ghost btn-icon-only" @click="newPreset" title="New preset">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
-          </svg>
-        </button>
-
-        <template v-if="hasSelection">
-          <input class="input" style="flex:1;max-width:340px;" v-model="presetName" placeholder="Preset name" />
-
-          <button class="btn btn-primary" @click="savePreset">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
-              <polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>
-            </svg>
-            Save
+      <!-- Toolbar -->
+      <div class="toolbar">
+        <div class="tb-presets-cell">
+          <span class="sec-label">Presets</span>
+          <button class="icon-btn" @click="newPreset" title="New preset">
+            <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
           </button>
-
-          <div class="vdivider"></div>
-
-          <button class="btn btn-danger" @click="deletePreset" :disabled="!selectedPath">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <polyline points="3 6 5 6 21 6"/>
-              <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>
-            </svg>
-            Delete
-          </button>
-
-          <button class="btn btn-ghost" @click="exportPreset" :disabled="!selectedPath">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
-              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-              <polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/>
-            </svg>
-            Export
-          </button>
-        </template>
+        </div>
+        <div class="tb-actions-cell">
+          <template v-if="hasSelection">
+            <input class="input name-input" v-model="presetName" placeholder="Preset name" aria-label="Preset name" />
+            <button class="btn primary" @click="savePreset">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
+              Save
+            </button>
+            <span class="tb-spacer"></span>
+            <button class="btn danger-hover" @click="deletePreset" :disabled="!selectedPath">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></svg>
+              Delete
+            </button>
+            <button class="btn" @click="exportPreset" :disabled="!selectedPath">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 8l4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
+              Export
+            </button>
+          </template>
+        </div>
       </div>
 
       <!-- Body -->
       <div class="presets-body">
 
-        <!-- Left panel -->
-        <div class="presets-left">
-          <div v-if="!presets.length" style="padding:var(--sp-3);font-size:var(--text-sm);color:var(--text-secondary);text-align:center;">
+        <!-- Left: preset list -->
+        <aside class="presets-col">
+          <div v-if="!presets.length" class="presets-empty">
             No presets yet.<br/>Click + to create one.
           </div>
           <div v-for="p in presets" :key="p.path"
-            class="preset-item" :class="{ active: selectedPath === p.path }"
+            class="preset-card" :class="{ active: selectedPath === p.path }"
             @click="selectPreset(p.path)">
-            <span class="preset-item__name">{{ p.name }}</span>
-            <span class="badge badge--neutral">{{ p.step_count }}</span>
+            <span class="pc-name">{{ p.name }}</span>
+            <span class="pc-meta">{{ p.step_count }}</span>
           </div>
-        </div>
+        </aside>
 
-        <!-- Right panel -->
-        <div class="presets-right">
-          <div v-if="!hasSelection" class="presets-right__placeholder">
+        <!-- Right: settings -->
+        <section class="settings-col">
+          <div v-if="!hasSelection" class="settings-placeholder">
             Select a preset or create a new one
           </div>
 
-          <div v-else class="presets-form">
-            <div style="font-size:var(--text-lg);font-weight:600;color:var(--text-primary);">Settings</div>
-
-            <div class="hdivider"></div>
+          <template v-else>
+            <h2 class="panel-title">Settings</h2>
 
             <!-- Step 1 -->
-            <div class="section-heading">
-              <span class="step-badge">1</span>
-              <span class="section-heading__title">Load the Excel template</span>
-              <span class="section-heading__hint">
-                <strong style="color:var(--text-primary);">.xlsx</strong>
-                &nbsp;<strong style="color:var(--text-primary);">.xls</strong>
-                &nbsp;<strong style="color:var(--text-primary);">.xlsm</strong>
-                &nbsp;<strong style="color:var(--text-primary);">.csv</strong>
-              </span>
+            <div class="step">
+              <div class="step-head">
+                <span class="step-badge">1</span>
+                <span class="step-title">Load the Excel template</span>
+                <span class="step-hint">Accepted formats <code>.xlsx .xls .xlsm .csv</code></span>
+              </div>
+              <FileLoader :fileInfo="fileInfo" @load="loadFile" @clear="clearFile" />
             </div>
 
-            <FileLoader :fileInfo="fileInfo" @load="loadFile" @clear="clearFile" />
-
-            <div class="hdivider"></div>
+            <div class="sep-line"></div>
 
             <!-- Step 2 -->
-            <div class="section-heading">
-              <span class="step-badge">2</span>
-              <span class="section-heading__title">Action configuration</span>
-              <span v-if="!sourceColumns.length" class="section-heading__hint">
-                Load a file to enable column mapping
-              </span>
+            <div class="step">
+              <div class="step-head">
+                <span class="step-badge">2</span>
+                <span class="step-title">Action configuration</span>
+                <span v-if="!sourceColumns.length" class="step-hint">Load a file to enable column mapping</span>
+              </div>
+              <ActionSteps :columns="sourceColumns" :payloads="payloads" @update:payloads="onPayloads" />
             </div>
+          </template>
+        </section>
 
-            <ActionSteps :columns="sourceColumns" :payloads="payloads" @update:payloads="onPayloads" />
-          </div>
-        </div>
       </div>
     </div>
   `,

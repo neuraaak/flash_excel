@@ -1,4 +1,3 @@
-const SEL = 'background:transparent;border:none;color:var(--text-primary);font-size:var(--text-sm);width:100%;cursor:pointer;outline:none;';
 export default {
   name: 'SortTable',
   props: { columns: { type: Array, default: () => [] }, payload: { type: Object, default: () => ({}) } },
@@ -8,7 +7,7 @@ export default {
     payload: { immediate: true, handler(v) {
       const by = v.by || [];
       const desc = v.descending;
-      this.rows = by.length ? by.map((col, i) => ({ col, desc: Array.isArray(desc) ? (desc[i] || false) : (desc || false) })) : [{ col: '', desc: false }];
+      this.rows = by.map((col, i) => ({ col, desc: Array.isArray(desc) ? !!desc[i] : !!desc }));
     }},
   },
   methods: {
@@ -16,25 +15,35 @@ export default {
       const valid = this.rows.filter(r => r.col);
       this.$emit('update:payload', { action: 'sort_rows', by: valid.map(r => r.col), descending: valid.map(r => r.desc) });
     },
-    addRow()     { this.rows.push({ col: '', desc: false }); },
-    removeRow(i) { this.rows.splice(i, 1); this.emit(); },
+    setDir(i, desc) { this.rows[i].desc = desc; this.emit(); },
+    addRow()        { this.rows.push({ col: this.columns[0] || '', desc: false }); this.emit(); },
+    removeRow(i)    { this.rows.splice(i, 1); this.emit(); },
   },
   template: `
-    <div style="padding:var(--sp-3);display:flex;flex-direction:column;gap:var(--sp-2);">
-      <div v-for="(r, i) in rows" :key="i" style="display:grid;grid-template-columns:1fr auto auto;gap:var(--sp-2);align-items:center;">
-        <select :style="'${SEL}'" v-model="r.col" @change="emit">
-          <option value="" style="background:var(--surface-raised)">Column…</option>
-          <option v-for="c in columns" :key="c" :value="c" style="background:var(--surface-raised)">{{ c }}</option>
-        </select>
-        <select :style="'${SEL}'" style="width:auto;" v-model="r.desc" @change="emit">
-          <option :value="false" style="background:var(--surface-raised)">↑ Ascending</option>
-          <option :value="true"  style="background:var(--surface-raised)">↓ Descending</option>
-        </select>
-        <button class="btn btn-ghost btn-icon-only" style="height:26px;width:26px;" @click="removeRow(i)">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
-        </button>
+    <div>
+      <div class="panel-sub">Sort keys</div>
+      <div class="rule-list">
+        <div v-for="(r, i) in rows" :key="i" class="rule-row" style="grid-template-columns:1fr auto var(--ctl-h);">
+          <span class="select-wrap">
+            <select v-model="r.col" @change="emit">
+              <option v-if="r.col && !columns.includes(r.col)" :value="r.col">{{ r.col }}</option>
+              <option v-for="c in columns" :key="c" :value="c">{{ c }}</option>
+            </select>
+          </span>
+          <span class="seg">
+            <button :class="{ active: !r.desc }" @click="setDir(i, false)">Asc</button>
+            <button :class="{ active: r.desc }"  @click="setDir(i, true)">Desc</button>
+          </span>
+          <button class="rule-del" @click="removeRow(i)" title="Remove">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
+          </button>
+        </div>
       </div>
-      <button class="btn btn-ghost" style="align-self:flex-start;height:26px;" @click="addRow">+ Add sort key</button>
+      <button class="add-rule" @click="addRow">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+        Add sort key
+      </button>
+      <div class="panel-hint">Keys apply top to bottom — the first is the primary sort.</div>
     </div>
   `,
 };

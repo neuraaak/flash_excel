@@ -1,29 +1,45 @@
-import OneColumnTable from './OneColumnTable.js';
-const SEL = 'background:transparent;border:none;color:var(--text-primary);font-size:var(--text-sm);cursor:pointer;outline:none;';
 export default {
   name: 'DeduplicateTable',
-  components: { OneColumnTable },
   props: { columns: { type: Array, default: () => [] }, payload: { type: Object, default: () => ({}) } },
   emits: ['update:payload'],
-  data() { return { keep: 'first' }; },
-  watch: { payload: { immediate: true, handler(v) { this.keep = v.keep || 'first'; } } },
-  computed: { subset() { return this.payload.subset || []; } },
+  computed: {
+    keep()   { return this.payload.keep || 'first'; },
+    subset() { return this.payload.subset || []; },
+    effectiveColumns() {
+      return this.columns.length ? this.columns : this.subset;
+    },
+  },
   methods: {
-    onSubset(s) { this.$emit('update:payload', { action: 'deduplicate_rows', subset: s, keep: this.keep }); },
-    onKeep()    { this.$emit('update:payload', { action: 'deduplicate_rows', subset: this.subset, keep: this.keep }); },
+    isOn(col) { return this.subset.includes(col); },
+    emit(subset, keep) { this.$emit('update:payload', { action: 'deduplicate_rows', subset, keep }); },
+    toggle(col) {
+      const set = new Set(this.subset);
+      if (set.has(col)) set.delete(col); else set.add(col);
+      this.emit(this.effectiveColumns.filter(c => set.has(c)), this.keep);
+    },
+    setKeep(v) { this.emit(this.subset, v); },
   },
   template: `
-    <div style="display:flex;flex-direction:column;height:100%;">
-      <div style="padding:var(--sp-3);display:flex;align-items:center;gap:var(--sp-2);border-bottom:1px solid var(--border-subtle);flex-shrink:0;">
-        <span style="font-size:var(--text-sm);color:var(--text-secondary);">Keep</span>
-        <select :style="'${SEL}'" v-model="keep" @change="onKeep">
-          <option value="first" style="background:var(--surface-raised)">first occurrence</option>
-          <option value="last"  style="background:var(--surface-raised)">last occurrence</option>
-          <option value="none"  style="background:var(--surface-raised)">none (remove all)</option>
-        </select>
+    <div>
+      <div class="panel-sub">Key columns</div>
+      <div class="toggle-list">
+        <div v-for="col in effectiveColumns" :key="col" class="toggle-row" :class="{ on: isOn(col) }">
+          <span class="tr-name">{{ col }}</span>
+          <label class="switch">
+            <input type="checkbox" :checked="isOn(col)" @change="toggle(col)">
+            <span class="track"></span>
+          </label>
+        </div>
       </div>
-      <OneColumnTable :columns="columns" :selected="subset"
-        header="DEDUPLICATE ON (empty = all)" @update:selected="onSubset" />
+      <div class="field" style="margin-top:16px;">
+        <span class="field-label">When duplicates are found, keep</span>
+        <span class="seg">
+          <button :class="{ active: keep === 'first' }" @click="setKeep('first')">First row</button>
+          <button :class="{ active: keep === 'last' }"  @click="setKeep('last')">Last row</button>
+          <button :class="{ active: keep === 'none' }"  @click="setKeep('none')">None</button>
+        </span>
+      </div>
+      <div class="panel-hint">Rows are duplicates when all selected key columns match. Leave empty to use all columns.</div>
     </div>
   `,
 };

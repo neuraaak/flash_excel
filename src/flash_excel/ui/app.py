@@ -18,12 +18,12 @@ def run() -> None:
 
     webview.create_window(
         title="Flash-Excel",
-        url=str(_WEB_DIR / "index.html"),
+        url=(_WEB_DIR / "index.html").as_uri(),
         js_api=api,
         width=1280,
         height=800,
         min_size=(900, 600),
-        background_color="#21252b",
+        background_color="#161a20",
     )
 
     webview.start(debug="--debug" in sys.argv)
