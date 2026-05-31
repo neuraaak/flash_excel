@@ -5,7 +5,7 @@ import ActionSteps  from '../components/ActionSteps.js';
 export default {
   name: 'PresetsPage',
   components: { FileLoader, ActionSteps },
-  inject: ['showToast'],
+  inject: ['showToast', 'i18n'],
   data() {
     return {
       presets:        [],
@@ -18,6 +18,7 @@ export default {
     };
   },
   computed: {
+    t()             { return this.i18n.t; },
     hasSelection()  { return !!this.selectedPath || this.isNew; },
     sourceColumns() { return this.fileInfo?.columns || this.presetColumns; },
   },
@@ -107,26 +108,26 @@ export default {
       <!-- Toolbar -->
       <div class="toolbar">
         <div class="tb-presets-cell">
-          <span class="sec-label">Presets</span>
-          <button class="icon-btn" @click="newPreset" title="New preset">
+          <span class="sec-label">{{ t('presets.title') }}</span>
+          <button class="icon-btn" @click="newPreset" :title="t('presets.new')">
             <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
           </button>
         </div>
         <div class="tb-actions-cell">
           <template v-if="hasSelection">
-            <input class="input name-input" v-model="presetName" placeholder="Preset name" aria-label="Preset name" />
+            <input class="input name-input" v-model="presetName" :placeholder="t('presets.name')" :aria-label="t('presets.name')" />
             <button class="btn primary" @click="savePreset">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><path d="M17 21v-8H7v8M7 3v5h8"/></svg>
-              Save
+              {{ t('toolbar.save') }}
             </button>
             <span class="tb-spacer"></span>
             <button class="btn danger-hover" @click="deletePreset" :disabled="!selectedPath">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6M10 11v6M14 11v6"/></svg>
-              Delete
+              {{ t('toolbar.delete') }}
             </button>
             <button class="btn" @click="exportPreset" :disabled="!selectedPath">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 16V4M8 8l4-4 4 4"/><path d="M4 16v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"/></svg>
-              Export
+              {{ t('toolbar.export') }}
             </button>
           </template>
         </div>
@@ -137,8 +138,8 @@ export default {
 
         <!-- Left: preset list -->
         <aside class="presets-col">
-          <div v-if="!presets.length" class="presets-empty">
-            No presets yet.<br/>Click + to create one.
+          <div v-if="!presets.length" class="presets-empty" style="white-space:pre-line">
+            {{ t('presets.empty') }}
           </div>
           <div v-for="p in presets" :key="p.path"
             class="preset-card" :class="{ active: selectedPath === p.path }"
@@ -151,18 +152,18 @@ export default {
         <!-- Right: settings -->
         <section class="settings-col">
           <div v-if="!hasSelection" class="settings-placeholder">
-            Select a preset or create a new one
+            {{ t('presets.placeholder') }}
           </div>
 
           <template v-else>
-            <h2 class="panel-title">Settings</h2>
+            <h2 class="panel-title">{{ t('presets.name') }}</h2>
 
             <!-- Step 1 -->
             <div class="step">
               <div class="step-head">
                 <span class="step-badge">1</span>
-                <span class="step-title">Load the Excel template</span>
-                <span class="step-hint">Accepted formats <code>.xlsx .xls .xlsm .csv</code></span>
+                <span class="step-title">{{ t('presets.step1.title') }}</span>
+                <span class="step-hint">{{ t('presets.step1.hint') }} <code>.xlsx .xls .xlsm .csv</code></span>
               </div>
               <FileLoader :fileInfo="fileInfo" @load="loadFile" @clear="clearFile" />
             </div>
@@ -173,8 +174,8 @@ export default {
             <div class="step">
               <div class="step-head">
                 <span class="step-badge">2</span>
-                <span class="step-title">Action configuration</span>
-                <span v-if="!sourceColumns.length" class="step-hint">Load a file to enable column mapping</span>
+                <span class="step-title">{{ t('presets.step2.title') }}</span>
+                <span v-if="!sourceColumns.length" class="step-hint">{{ t('presets.step2.hint') }}</span>
               </div>
               <ActionSteps :columns="sourceColumns" :payloads="payloads" @update:payloads="onPayloads" />
             </div>
