@@ -9,19 +9,6 @@ import DeduplicateTable from './tables/DeduplicateTable.js';
 import SortTable        from './tables/SortTable.js';
 import ReorderTable     from './tables/ReorderTable.js';
 
-const STEPS = [
-  { action: 'rename_columns',      label: 'Rename columns',      desc: 'Give one or more columns a new name.' },
-  { action: 'select_columns',      label: 'Select columns',      desc: 'Keep only the columns you choose.' },
-  { action: 'cast_types',          label: 'Cast types',          desc: 'Convert columns to a target data type.' },
-  { action: 'replace_values',      label: 'Replace values',      desc: 'Find and replace values inside columns.' },
-  { action: 'trim_whitespace',     label: 'Clean text',          desc: 'Trim, normalise and strip whitespace.' },
-  { action: 'add_computed_column', label: 'Add computed column', desc: 'Create a new column from an expression.' },
-  { action: 'filter_rows',         label: 'Filter rows',         desc: 'Keep only rows matching your conditions.' },
-  { action: 'deduplicate_rows',    label: 'Deduplicate rows',    desc: 'Remove duplicate rows by key columns.' },
-  { action: 'sort_rows',           label: 'Sort rows',           desc: 'Order rows by one or more columns.' },
-  { action: 'reorder_columns',     label: 'Reorder columns',     desc: 'Change the column order.' },
-];
-
 const EDITOR_MAP = {
   rename_columns:      RenameTable,
   select_columns:      SelectTable,
@@ -56,8 +43,24 @@ export default {
     payloads: { type: Object, default: () => ({}) },
   },
   emits: ['update:payloads'],
-  data() { return { activeAction: null, steps: STEPS }; },
+  inject: ['i18n'],
+  data() { return { activeAction: null }; },
   computed: {
+    t()             { return this.i18n.t; },
+    steps() {
+      return [
+        { action: 'rename_columns',      label: this.t('steps.rename'),   desc: this.t('steps.rename.desc')   },
+        { action: 'select_columns',      label: this.t('steps.select'),   desc: this.t('steps.select.desc')   },
+        { action: 'cast_types',          label: this.t('steps.cast'),     desc: this.t('steps.cast.desc')     },
+        { action: 'replace_values',      label: this.t('steps.replace'),  desc: this.t('steps.replace.desc')  },
+        { action: 'trim_whitespace',     label: this.t('steps.clean'),    desc: this.t('steps.clean.desc')    },
+        { action: 'add_computed_column', label: this.t('steps.computed'), desc: this.t('steps.computed.desc') },
+        { action: 'filter_rows',         label: this.t('steps.filter'),   desc: this.t('steps.filter.desc')   },
+        { action: 'deduplicate_rows',    label: this.t('steps.dedupe'),   desc: this.t('steps.dedupe.desc')   },
+        { action: 'sort_rows',           label: this.t('steps.sort'),     desc: this.t('steps.sort.desc')     },
+        { action: 'reorder_columns',     label: this.t('steps.reorder'),  desc: this.t('steps.reorder.desc')  },
+      ];
+    },
     activeEditor()  { return this.activeAction ? EDITOR_MAP[this.activeAction] : null; },
     activePayload() { return this.activeAction ? (this.payloads[this.activeAction] || {}) : {}; },
     activeStep()    { return this.steps.find(s => s.action === this.activeAction); },
@@ -90,7 +93,7 @@ export default {
       <!-- Right: config panel -->
       <div class="panel">
         <div v-if="!activeAction" class="panel-empty">
-          Select an action to configure it
+          {{ t('steps.empty') }}
         </div>
         <template v-else>
           <div class="panel-head">
@@ -98,7 +101,7 @@ export default {
               <h3>{{ activeStep.label }}</h3>
               <p>{{ activeStep.desc }}</p>
             </div>
-            <span class="ph-count">{{ activeCount }} configured</span>
+            <span class="ph-count">{{ activeCount }} {{ t('steps.configured') }}</span>
           </div>
           <div class="panel-body">
             <component :is="activeEditor"
