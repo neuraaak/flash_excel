@@ -16,7 +16,9 @@ from typing import Any
 
 import webview  # type: ignore[import-untyped]
 from pydantic import TypeAdapter
+from webview import FileDialog  # type: ignore[import-untyped]  # noqa: F401
 
+from flash_excel.config import load_app_config, load_themes, save_app_config
 from flash_excel.core.models import Preset, PresetMeta, Step
 from flash_excel.io.loader import read_csv, read_excel
 from flash_excel.io.models import FileLoaderResult
@@ -42,6 +44,36 @@ class FlashExcelAPI:
         self._source_columns: list[str] = []
         self._current_preset_path: Path | None = None
         self._step_payloads: dict[str, dict] = {}
+
+    # ------------------------------------------------------------------
+    # Window controls
+    # ------------------------------------------------------------------
+
+    # ------------------------------------------------------------------
+    # Settings & themes
+    # ------------------------------------------------------------------
+
+    def get_app_config(self) -> dict:
+        """Return the current app configuration (appearance, etc.)."""
+        try:
+            return _ok(load_app_config())
+        except Exception as exc:
+            return _err(str(exc))
+
+    def save_app_config(self, palette: str, mode: str) -> dict:
+        """Persist appearance settings to app.config.yaml."""
+        try:
+            save_app_config(palette, mode)
+            return _ok()
+        except Exception as exc:
+            return _err(str(exc))
+
+    def get_themes(self) -> dict:
+        """Return all palette definitions from theme.config.yaml."""
+        try:
+            return _ok(load_themes())
+        except Exception as exc:
+            return _err(str(exc))
 
     # ------------------------------------------------------------------
     # Presets
@@ -149,7 +181,7 @@ class FlashExcelAPI:
             if window is None:
                 return _err("No active window")
             result = window.create_file_dialog(  # type: ignore[union-attr]
-                int(webview.SAVE_DIALOG),
+                FileDialog.SAVE,
                 directory=str(Path.home()),
                 save_filename=src.name,
                 file_types=("TOML files (*.toml)",),
@@ -175,7 +207,7 @@ class FlashExcelAPI:
             if window is None:
                 return _err("No active window")
             result = window.create_file_dialog(  # type: ignore[union-attr]
-                int(webview.OPEN_DIALOG),
+                FileDialog.OPEN,
                 allow_multiple=False,
                 file_types=("Supported files (*.xlsx *.xls *.xlsm *.csv)",),
             )

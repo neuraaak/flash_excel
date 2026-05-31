@@ -4,10 +4,10 @@
  */
 
 async function call(method, ...args) {
-  if (!window.pywebview || !window.pywebview.api) {
+  if (!globalThis.pywebview?.api) {
     throw new Error(`pywebview.api not ready (calling ${method})`);
   }
-  const result = await window.pywebview.api[method](...args);
+  const result = await globalThis.pywebview.api[method](...args);
   if (!result.ok) throw new Error(result.error || 'Unknown error');
   return result.data;
 }
@@ -29,4 +29,9 @@ export const api = {
   // Steps
   getStepPayload: (action)           => call('get_step_payload', action),
   setStepPayload: (action, payload)  => call('set_step_payload', action, payload),
+
+  // Settings & themes
+  getAppConfig:   ()                 => call('get_app_config'),
+  saveAppConfig:  (palette, mode)    => call('save_app_config', palette, mode),
+  getThemes:      ()                 => call('get_themes'),
 };
