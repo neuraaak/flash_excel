@@ -2,6 +2,10 @@ export default {
   name: 'FileLoader',
   props: { fileInfo: { type: Object, default: null } },
   emits: ['load', 'clear'],
+  inject: ['i18n'],
+  computed: {
+    t() { return this.i18n.t; },
+  },
   methods: {
     onClear(e) { e.stopPropagation(); this.$emit('clear'); },
     sizeLabel(b) {
@@ -18,7 +22,7 @@ export default {
           <path d="M20 16.5A4.5 4.5 0 0 0 18 8h-1.26A7 7 0 1 0 4 14.9"/>
         </svg>
       </span>
-      <span>Load file <span style="color:var(--text_secondary);font-weight:400;">— or drop it here</span></span>
+      <span>{{ t('file.load') }}</span>
     </div>
 
     <div v-else class="file-loaded">
@@ -35,7 +39,7 @@ export default {
         <div class="file-loaded__name">{{ fileInfo.file_name }}</div>
         <div class="file-loaded__size">{{ sizeLabel(fileInfo.size_bytes) }}</div>
       </div>
-      <button class="icon-btn" @click="onClear" title="Remove file">
+      <button class="icon-btn" @click="onClear" :title="t('file.clear')">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
           <path d="M6 6l12 12M18 6L6 18"/>
         </svg>
