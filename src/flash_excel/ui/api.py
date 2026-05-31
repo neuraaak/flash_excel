@@ -60,10 +60,10 @@ class FlashExcelAPI:
         except Exception as exc:
             return _err(str(exc))
 
-    def save_app_config(self, palette: str, mode: str) -> dict:
-        """Persist appearance settings to app.config.yaml."""
+    def save_app_config(self, palette: str, mode: str, locale: str = "en") -> dict:
+        """Persist appearance settings and locale to app.config.yaml."""
         try:
-            save_app_config(palette, mode)
+            save_app_config(palette, mode, locale)
             return _ok()
         except Exception as exc:
             return _err(str(exc))

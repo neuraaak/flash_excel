@@ -15,3 +15,8 @@ appearance:
   # Mode d'affichage.
   # Valeurs disponibles : dark | light
   mode: dark
+
+# //////
+# Langue
+# Valeurs disponibles : en | fr
+locale: en

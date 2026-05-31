@@ -13,10 +13,10 @@ _DEFAULTS: dict = {
     "appearance": {
         "palette": "blue-gray",
         "mode": "dark",
-    }
+    },
+    "locale": "en",
 }
 
-# Template conservé à l'écriture pour garder les commentaires inline
 _TEMPLATE = """\
 # ///////////////////////////////////////////////////////////////
 # Flash-Excel — Configuration utilisateur
@@ -35,14 +35,26 @@ appearance:
   # Mode d'affichage.
   # Valeurs disponibles : dark | light
   mode: {mode}
+
+# //////
+# Langue
+# Valeurs disponibles : en | fr
+locale: {locale}
 """
 
 
 def load_app_config() -> dict:
     """Charge la config, crée le fichier avec les défauts s'il n'existe pas."""
     if not APP_CONFIG.exists():
-        _write(_DEFAULTS["appearance"]["palette"], _DEFAULTS["appearance"]["mode"])
-        return {k: dict(v) for k, v in _DEFAULTS.items()}
+        _write(
+            _DEFAULTS["appearance"]["palette"],
+            _DEFAULTS["appearance"]["mode"],
+            _DEFAULTS["locale"],
+        )
+        return {
+            "appearance": dict(_DEFAULTS["appearance"]),
+            "locale": _DEFAULTS["locale"],
+        }
     try:
         raw = yaml.safe_load(APP_CONFIG.read_text(encoding="utf-8")) or {}
         app = raw.get("appearance", {})
@@ -50,15 +62,19 @@ def load_app_config() -> dict:
             "appearance": {
                 "palette": app.get("palette", _DEFAULTS["appearance"]["palette"]),
                 "mode": app.get("mode", _DEFAULTS["appearance"]["mode"]),
-            }
+            },
+            "locale": raw.get("locale", _DEFAULTS["locale"]),
         }
     except Exception:
-        return {k: dict(v) for k, v in _DEFAULTS.items()}
+        return {
+            "appearance": dict(_DEFAULTS["appearance"]),
+            "locale": _DEFAULTS["locale"],
+        }
 
 
-def save_app_config(palette: str, mode: str) -> None:
-    """Persiste les réglages d'apparence en conservant les commentaires."""
-    _write(palette, mode)
+def save_app_config(palette: str, mode: str, locale: str = "en") -> None:
+    """Persiste les réglages d'apparence et la locale en conservant les commentaires."""
+    _write(palette, mode, locale)
 
 
 def load_themes() -> dict:
@@ -70,9 +86,9 @@ def load_themes() -> dict:
         return {}
 
 
-def _write(palette: str, mode: str) -> None:
+def _write(palette: str, mode: str, locale: str) -> None:
     APP_CONFIG.parent.mkdir(parents=True, exist_ok=True)
     APP_CONFIG.write_text(
-        _TEMPLATE.format(palette=palette, mode=mode),
+        _TEMPLATE.format(palette=palette, mode=mode, locale=locale),
         encoding="utf-8",
     )
