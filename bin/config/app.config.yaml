@@ -1,0 +1,64 @@
+# ///////////////////////////////////////////////////////////////
+# APPLICATION
+# ///////////////////////////////////////////////////////////////
+app:
+  # APP
+  # //////
+  name: Flash-Excel
+  description: A lightweight spreadsheet application designed for quick data
+    manipulation.
+  # //////
+  app_width: 1280
+  app_min_width: 940
+  # //////
+  app_height: 720
+  app_min_height: 560
+
+  # GUI
+  # //////
+  # Controls debug-level output of ezqt_app internal printer.
+  debug_printer: false
+  menu_panel_shrinked_width: 60
+  menu_panel_extended_width: 240
+  settings_panel_width: 240
+  time_animation: 400
+
+  # Where settings panel values are persisted.
+  # Dot-separated path within this file (app.config.yaml) — do NOT include the
+  # file name prefix. Example: "settings_panel" resolves to app_config["settings_panel"].
+  settings_storage_root: "settings_panel"
+
+  # Config metadata
+  # //////
+  config_version: 1
+
+# ///////////////////////////////////////////////////////////////
+# SETTINGS PANEL
+# ///////////////////////////////////////////////////////////////
+settings_panel:
+  # Settings automatically generated from this configuration
+  theme:
+    type: "select"
+    label: "Active Theme"
+    # options are derived dynamically from theme.config.yaml palette — do not set here
+    # Stored as "preset:variant" (e.g. "blue_gray:dark").
+    # Persisted theme chosen by the user and also the framework default.
+    # Written by AppService.stage_config_value on every theme change and
+    # flushed to disk on application quit.
+    default: "github-dark:dark"
+    description: "Choose the application theme"
+    enabled: true
+
+  language:
+    type: "select"
+    label: "Language"
+    options:
+      - English
+      - Français
+      - Español
+      - Deutsch
+    default: "English"
+    description: "Interface language"
+    enabled: true
+
+# Configuration des thèmes et palettes dans palette.yaml

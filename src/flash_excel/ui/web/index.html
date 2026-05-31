@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flash-Excel</title>
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/presets.css" />
+</head>
+<body>
+  <div id="app">
+    <div style="display:flex;align-items:center;justify-content:center;height:100%;color:#7a869e;font-size:13px;">
+      Loading…
+    </div>
+  </div>
+
+  <script type="module">
+    import { createApp } from 'https://unpkg.com/vue@3.4.21/dist/vue.esm-browser.prod.js';
+    import AppShell     from './js/components/AppShell.js';
+    import PresetsPage  from './js/pages/Presets.js';
+
+    const App = {
+      name: 'App',
+      components: { AppShell, PresetsPage },
+      data() {
+        return { currentPage: 'presets', toasts: [] };
+      },
+      methods: {
+        navigate(page) { this.currentPage = page; },
+        showToast(message, type = 'success') {
+          const id = Date.now();
+          this.toasts.push({ id, message, type });
+          setTimeout(() => { this.toasts = this.toasts.filter(t => t.id !== id); }, 3500);
+        },
+      },
+      provide() {
+        return { navigate: this.navigate, showToast: this.showToast };
+      },
+      template: `
+        <AppShell :currentPage="currentPage" @navigate="navigate">
+          <PresetsPage v-if="currentPage === 'presets'" />
+          <div v-else style="display:flex;align-items:center;justify-content:center;height:100%;color:var(--text-secondary);">
+            Processing — coming soon
+          </div>
+        </AppShell>
+        <div class="toast-container">
+          <div v-for="t in toasts" :key="t.id" class="toast" :class="'toast--' + t.type">{{ t.message }}</div>
+        </div>
+      `,
+    };
+
+    function mount() {
+      createApp(App).mount('#app');
+    }
+
+    if (window.pywebview) {
+      mount();
+    } else {
+      window.addEventListener('pywebviewready', mount, { once: true });
+      // Fallback pour les cas où l'événement a déjà été émis
+      setTimeout(() => mount(), 500);
+    }
+  </script>
+</body>
+</html>

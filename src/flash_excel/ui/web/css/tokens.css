@@ -1,0 +1,54 @@
+/* Flash-Excel — Design Tokens (dark palette: blue-gray) */
+:root {
+  /* Surfaces */
+  --surface-sunken:   #181b20;
+  --surface-base:     #21252b;
+  --surface-raised:   #282c34;
+  --surface-overlay:  #323842;
+  --surface-floating: #3c4351;
+
+  /* Borders */
+  --border-subtle: #3a3f4b;
+
+  /* Text */
+  --text-primary:   #dde0e6;
+  --text-secondary: #7a869e;
+  --text-on-accent: #ffffff;
+
+  /* Accent */
+  --accent-brand: #96CD32;
+  --accent-soft:  rgba(150, 205, 50, 0.12);
+  --accent-line:  rgba(150, 205, 50, 0.30);
+
+  /* Semantic */
+  --semantic-error:   #e06c75;
+  --semantic-warning: #e5c07b;
+  --semantic-success: #98c379;
+
+  /* Spacing (4px base) */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 10px;
+
+  /* Typography */
+  --font-body: "Segoe UI", system-ui, -apple-system, sans-serif;
+  --font-mono: "Cascadia Code", "Fira Code", monospace;
+  --text-xs:   11px;
+  --text-sm:   12px;
+  --text-base: 13px;
+  --text-md:   14px;
+  --text-lg:   17px;
+
+  /* Transitions */
+  --t-fast:   120ms ease-out;
+  --t-normal: 200ms ease-out;
+}

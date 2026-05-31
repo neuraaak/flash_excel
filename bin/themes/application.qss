@@ -676,3 +676,37 @@ QTableWidget#presets_action_table_widget QLineEdit:focus {
 	color: var(--text_secondary);
 	font-size: 12px;
 }
+
+/* Table source column cell : dot indicator + label */
+#presets_action_table_source_cell {
+	background: transparent;
+}
+
+#presets_action_table_source_dot {
+	background-color: var(--accent_brand);
+	border-radius: 3px;
+	min-width: 6px;
+	max-width: 6px;
+	min-height: 6px;
+	max-height: 6px;
+}
+
+#presets_action_table_source_label {
+	color: var(--text_primary);
+	background: transparent;
+}
+
+/* Table header uppercase + muted color */
+QTableWidget#presets_action_table_widget QHeaderView::section {
+	color: var(--text_secondary);
+	font-size: 11px;
+	font-weight: 600;
+	letter-spacing: 0.5px;
+	text-transform: uppercase;
+}
+
+/* File loader hint format text */
+#presets_file_hint {
+	color: var(--text_secondary);
+	font-size: 12px;
+}

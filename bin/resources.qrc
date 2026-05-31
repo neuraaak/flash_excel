@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<RCC>
+    <qresource prefix="/">
+        <file>fonts/Hack-Regular.ttf</file>
+        <file>images/csv.png</file>
+        <file>images/xlsx.png</file>
+        <file>icons/bool_type.png</file>
+        <file>icons/datetime_type.png</file>
+        <file>icons/date_type.png</file>
+        <file>icons/dot_off.svg</file>
+        <file>icons/dot_on.svg</file>
+        <file>icons/float_type.png</file>
+        <file>icons/int_type.png</file>
+        <file>icons/text_type.png</file>
+        <file>themes/application.qss</file>
+        <file>themes/extended.qss</file>
+        <file>themes/global.qss</file>
+    </qresource>
+</RCC>
