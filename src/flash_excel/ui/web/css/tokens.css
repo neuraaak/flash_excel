@@ -1,54 +1,57 @@
-/* Flash-Excel — Design Tokens (dark palette: blue-gray) */
 :root {
-  /* Surfaces */
-  --surface-sunken:   #181b20;
-  --surface-base:     #21252b;
-  --surface-raised:   #282c34;
-  --surface-overlay:  #323842;
-  --surface-floating: #3c4351;
+  --surface_sunken:   rgb(22, 26, 32);
+  --surface_base:     rgb(27, 31, 39);
+  --surface_raised:   rgb(33, 37, 46);
+  --surface_overlay:  rgb(44, 51, 64);
+  --surface_floating: rgb(52, 59, 74);
+  --border_subtle:    rgb(54, 61, 76);
+  --accent_brand:     #96CD32;
+  --text_primary:     rgb(218, 220, 228);
+  --text_secondary:   rgb(122, 134, 158);
+  --text_on_accent:   rgb(255, 255, 255);
+  --semantic_success: #4ade80;
+  --semantic_warning: #fbbf24;
+  --semantic_error:   #f87171;
+  --semantic_info:    #60a5fa;
 
-  /* Borders */
-  --border-subtle: #3a3f4b;
+  --accent_weak:   color-mix(in srgb, var(--accent_brand) 16%, transparent);
+  --accent_weaker: color-mix(in srgb, var(--accent_brand) 9%, transparent);
+  --accent_line:   color-mix(in srgb, var(--accent_brand) 50%, transparent);
 
-  /* Text */
-  --text-primary:   #dde0e6;
-  --text-secondary: #7a869e;
-  --text-on-accent: #ffffff;
+  --overlay_scrim: rgba(33, 37, 46, 0.88);
 
-  /* Accent */
-  --accent-brand: #96CD32;
-  --accent-soft:  rgba(150, 205, 50, 0.12);
-  --accent-line:  rgba(150, 205, 50, 0.30);
+  --r-sm: 4px; --r-md: 5px; --r-lg: 6px; --r-xl: 7px;
+  --ctl-h: 34px;
+  --row-h: 32px;
+  --gap: 14px;
+  --pad-x: 22px;
+  --col-side: 56px;
+  --col-presets: 246px;
 
-  /* Semantic */
-  --semantic-error:   #e06c75;
-  --semantic-warning: #e5c07b;
-  --semantic-success: #98c379;
+  --fs-xs: 11px; --fs-sm: 12px; --fs-md: 13px; --fs-lg: 15px; --fs-xl: 17px;
+  --font: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: "Cascadia Code", "Consolas", ui-monospace, monospace;
 
-  /* Spacing (4px base) */
-  --sp-1: 4px;
-  --sp-2: 8px;
-  --sp-3: 12px;
-  --sp-4: 16px;
-  --sp-5: 20px;
-  --sp-6: 24px;
-  --sp-8: 32px;
+  /* Backward-compat aliases for action table components */
+  --surface-sunken:   var(--surface_sunken);
+  --surface-base:     var(--surface_base);
+  --surface-raised:   var(--surface_raised);
+  --surface-overlay:  var(--surface_overlay);
+  --surface-floating: var(--surface_floating);
+  --border-subtle:    var(--border_subtle);
+  --accent-brand:     var(--accent_brand);
+  --text-primary:     var(--text_primary);
+  --text-secondary:   var(--text_secondary);
+  --text-on-accent:   var(--text_on_accent);
+  --semantic-error:   var(--semantic_error);
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --text-xs: var(--fs-xs);
+  --text-sm: var(--fs-sm);
+  --text-md: var(--fs-md);
+  --text-lg: var(--fs-lg);
+}
 
-  /* Radius */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 10px;
-
-  /* Typography */
-  --font-body: "Segoe UI", system-ui, -apple-system, sans-serif;
-  --font-mono: "Cascadia Code", "Fira Code", monospace;
-  --text-xs:   11px;
-  --text-sm:   12px;
-  --text-base: 13px;
-  --text-md:   14px;
-  --text-lg:   17px;
-
-  /* Transitions */
-  --t-fast:   120ms ease-out;
-  --t-normal: 200ms ease-out;
+[data-density="compact"] {
+  --ctl-h: 30px; --row-h: 28px; --gap: 10px; --pad-x: 16px; --fs-md: 12px;
+  --col-presets: 220px;
 }
