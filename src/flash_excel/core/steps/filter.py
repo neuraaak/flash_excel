@@ -26,12 +26,11 @@ from typing import TYPE_CHECKING
 import polars as pl
 
 # Local imports
+from flash_excel.core.models import FilterCondition
 from flash_excel.core.registry import action
 
 if TYPE_CHECKING:
     from collections.abc import Callable
-
-    from flash_excel.core.models import FilterCondition
 
 # ///////////////////////////////////////////////////////////////
 # CONSTANTS
@@ -54,6 +53,24 @@ _OPERATOR_MAP: dict[str, Callable[[pl.Expr, str | int | float], pl.Expr]] = {
 # ///////////////////////////////////////////////////////////////
 # FUNCTIONS
 # ///////////////////////////////////////////////////////////////
+
+
+def _coerce_value(
+    value: str | int | float | bool, dtype: pl.DataType
+) -> str | int | float | bool:
+    """Cast a scalar value to match a Polars column dtype.
+
+    Needed because filter values arrive as strings from the JS/TOML layer
+    even when the target column is numeric.
+    """
+    if isinstance(value, str):
+        if dtype.is_integer():
+            return int(value)
+        if dtype.is_float():
+            return float(value)
+        if dtype == pl.Boolean:
+            return value.lower() in ("true", "1", "yes")
+    return value
 
 
 def _build_expr(condition: FilterCondition) -> pl.Expr:
@@ -116,7 +133,18 @@ def filter_rows(
     if not conditions:
         return df
 
-    exprs = [_build_expr(cond) for cond in conditions]
+    schema = df.schema
+    coerced = []
+    for cond in conditions:
+        if cond.column in schema and isinstance(cond.value, str):
+            cond = FilterCondition(
+                column=cond.column,
+                operator=cond.operator,
+                value=_coerce_value(cond.value, schema[cond.column]),
+            )
+        coerced.append(cond)
+
+    exprs = [_build_expr(cond) for cond in coerced]
 
     if combine == "AND":
         # Fold all expressions with bitwise AND.

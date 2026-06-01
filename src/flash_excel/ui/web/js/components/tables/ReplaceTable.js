@@ -9,27 +9,29 @@ export default {
   data() { return { rows: [] }; },
   watch: {
     payload: { immediate: true, handler(v) {
-      const rules = v.rules_by_column || {};
+      if (this._emitting) return;
       const rows = [];
-      for (const [col, spec] of Object.entries(rules)) {
-        String(spec).split(',').forEach(pair => {
-          const idx = pair.indexOf('=');
-          if (idx === -1) return;
-          rows.push({ col, find: pair.slice(0, idx).trim(), rep: pair.slice(idx + 1).trim() });
-        });
+      for (const item of (v.items || [])) {
+        for (const [find, rep] of Object.entries(item.mapping || {})) {
+          rows.push({ col: item.column, find, rep: rep ?? '' });
+        }
       }
       this.rows = rows;
     }},
   },
   methods: {
     emit() {
-      const rules = {};
+      this._emitting = true;
+      // Regroup rows by column → items: [{column, mapping}]
+      const byCol = {};
       for (const r of this.rows) {
         if (!r.col || !r.find.trim()) continue;
-        const pair = `${r.find.trim()}=${r.rep.trim()}`;
-        rules[r.col] = rules[r.col] ? `${rules[r.col]}, ${pair}` : pair;
+        if (!byCol[r.col]) byCol[r.col] = {};
+        byCol[r.col][r.find.trim()] = r.rep.trim();
       }
-      this.$emit('update:payload', { action: 'replace_values', rules_by_column: rules });
+      const items = Object.entries(byCol).map(([column, mapping]) => ({ column, mapping }));
+      this.$emit('update:payload', items.length ? { action: 'replace_values', items } : {});
+      this.$nextTick(() => { this._emitting = false; });
     },
     addRow()     { this.rows.push({ col: this.columns[0] || '', find: '', rep: '' }); this.emit(); },
     removeRow(i) { this.rows.splice(i, 1); this.emit(); },

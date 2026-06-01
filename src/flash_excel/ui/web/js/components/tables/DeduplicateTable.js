@@ -38,7 +38,6 @@ export default {
         <span class="seg">
           <button :class="{ active: keep === 'first' }" @click="setKeep('first')">First row</button>
           <button :class="{ active: keep === 'last' }"  @click="setKeep('last')">Last row</button>
-          <button :class="{ active: keep === 'none' }"  @click="setKeep('none')">None</button>
         </span>
       </div>
       <div class="panel-hint">Rows are duplicates when all selected key columns match. Leave empty to use all columns.</div>

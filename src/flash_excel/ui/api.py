@@ -20,7 +20,7 @@ from webview import FileDialog  # type: ignore[import-untyped]  # noqa: F401
 
 from flash_excel.config import load_app_config, load_themes, save_app_config
 from flash_excel.core.models import Preset, PresetMeta, Step
-from flash_excel.io.loader import read_csv, read_excel
+from flash_excel.io.loader import read_schema
 from flash_excel.io.models import FileLoaderResult
 from flash_excel.paths import PRESETS_DIR
 from flash_excel.presets import delete_preset, list_presets, load_preset, save_preset
@@ -42,12 +42,19 @@ class FlashExcelAPI:
     def __init__(self) -> None:
         self._loaded_file: FileLoaderResult | None = None
         self._source_columns: list[str] = []
+        self._source_schema: dict[str, str] = {}
+        self._source_file: str = ""
         self._current_preset_path: Path | None = None
         self._step_payloads: dict[str, dict] = {}
 
     # ------------------------------------------------------------------
-    # Window controls
+    # Debug bridge (JS → Python)
     # ------------------------------------------------------------------
+
+    def debug_log(self, msg: str) -> dict:
+        """Relay a JS debug message to the Python console/log."""
+        print(f"[flash-excel/js] {msg}")
+        return _ok()
 
     # ------------------------------------------------------------------
     # Settings & themes
@@ -108,6 +115,14 @@ class FlashExcelAPI:
             preset = load_preset(path)
             self._current_preset_path = path
             self._step_payloads = {}
+            # Restore cached source info from preset meta so re-saves
+            # without a loaded file keep the original column/schema data.
+            if preset.meta.source_columns:
+                self._source_columns = list(preset.meta.source_columns)
+            if preset.meta.source_types:
+                self._source_schema = dict(preset.meta.source_types)
+            if preset.meta.source_file:
+                self._source_file = preset.meta.source_file
             for step in preset.steps:
                 step_dict = step.model_dump()
                 action = step_dict.pop("action")
@@ -130,17 +145,55 @@ class FlashExcelAPI:
         except Exception as exc:
             return _err(str(exc))
 
+    @staticmethod
+    def _name_to_filename(name: str) -> str:
+        """Convert a preset display name to a snake_case filename stem."""
+        import re
+
+        slug = name.strip().lower()
+        slug = re.sub(r"[^\w\s]", "", slug)  # strip punctuation
+        slug = re.sub(r"\s+", "_", slug)  # spaces → underscore
+        slug = re.sub(r"_+", "_", slug).strip("_")
+        return slug or "preset"
+
     def save_preset(self, name: str, steps_payload: list) -> dict:
         """Persist current preset to disk."""
         try:
-            if self._current_preset_path is None:
-                name = name.strip()
-                self._current_preset_path = (
-                    PRESETS_DIR / f"{name.lower().replace(' ', '_')}.toml"
-                )
+            name = name.strip()
+            new_path = PRESETS_DIR / f"{self._name_to_filename(name)}.toml"
+
+            # Si le nom a changé, supprimer l'ancien fichier.
+            if (
+                self._current_preset_path is not None
+                and self._current_preset_path != new_path
+                and self._current_preset_path.exists()
+            ):
+                self._current_preset_path.unlink()
+
+            self._current_preset_path = new_path
+
+            # Expand items-array payloads into individual steps.
+            expanded: list = []
+            for raw in steps_payload:
+                if not raw:
+                    continue
+                if raw.get("action") == "add_computed_column" and "items" in raw:
+                    for item in raw["items"]:
+                        if item.get("target") and item.get("expression"):
+                            expanded.append({"action": "add_computed_column", **item})
+                elif raw.get("action") == "clean_text" and "items" in raw:
+                    for item in raw["items"]:
+                        if item.get("columns"):
+                            expanded.append({"action": "clean_text", **item})
+                elif raw.get("action") == "replace_values" and "items" in raw:
+                    for item in raw["items"]:
+                        if item.get("column") and item.get("mapping"):
+                            expanded.append({"action": "replace_values", **item})
+                else:
+                    expanded.append(raw)
 
             steps: list[Step] = []
-            for raw in steps_payload:
+            for raw in expanded:
                 if raw:
                     try:  # noqa: SIM105
                         steps.append(_step_adapter.validate_python(raw))
@@ -151,6 +204,8 @@ class FlashExcelAPI:
                 meta=PresetMeta(
                     name=name,
                     source_columns=self._source_columns,
+                    source_types=self._source_schema,
+                    source_file=self._source_file,
                 ),
                 steps=steps,
             )
@@ -209,7 +264,7 @@ class FlashExcelAPI:
             result = window.create_file_dialog(  # type: ignore[union-attr]
                 FileDialog.OPEN,
                 allow_multiple=False,
-                file_types=("Supported files (*.xlsx *.xls *.xlsm *.csv)",),
+                file_types=("Supported files (*.xlsx;*.xls;*.xlsm;*.csv)",),
             )
             if not result:
                 return _ok({"cancelled": True})
@@ -221,6 +276,7 @@ class FlashExcelAPI:
         """Unload the current file."""
         self._loaded_file = None
         self._source_columns = []
+        self._source_schema = {}
         return _ok()
 
     # ------------------------------------------------------------------
@@ -233,6 +289,7 @@ class FlashExcelAPI:
 
     def set_step_payload(self, action: str, payload: dict) -> dict:
         """Store an edited step payload in memory."""
+        print(f"[flash-excel] set_step_payload: action={action} payload={payload}")
         if payload:
             self._step_payloads[action] = payload
         else:
@@ -252,14 +309,16 @@ class FlashExcelAPI:
             path = Path(path_str)
             result = FileLoaderResult.from_path(path)
             self._loaded_file = result
-            df = read_csv(path) if result.file_type == "csv" else read_excel(path)
-            self._source_columns = df.columns
+            self._source_schema = read_schema(path)
+            self._source_columns = list(self._source_schema.keys())
+            self._source_file = result.file_name
             return _ok(
                 {
                     "file_name": result.file_name,
                     "size_bytes": result.size_bytes,
                     "file_type": result.file_type,
                     "columns": self._source_columns,
+                    "schema": self._source_schema,
                 }
             )
         except Exception as exc:
@@ -267,9 +326,42 @@ class FlashExcelAPI:
 
     @staticmethod
     def _preset_to_dict(preset: Preset) -> dict:
+        # Aggregate multi-step actions into single payloads with items[].
+        computed_items: list[dict] = []
+        clean_items: list[dict] = []
+        replace_items: list[dict] = []
+        other_steps: list[dict] = []
+        for s in preset.steps:
+            d = s.model_dump()
+            if d["action"] == "add_computed_column":
+                computed_items.append(
+                    {"target": d["target"], "expression": d["expression"]}
+                )
+            elif d["action"] == "clean_text":
+                clean_items.append(
+                    {
+                        "columns": d["columns"],
+                        "ops": d.get("ops", []),
+                        "case": d.get("case", "none"),
+                    }
+                )
+            elif d["action"] == "replace_values":
+                replace_items.append({"column": d["column"], "mapping": d["mapping"]})
+            else:
+                other_steps.append(d)
+        if computed_items:
+            other_steps.append(
+                {"action": "add_computed_column", "items": computed_items}
+            )
+        if clean_items:
+            other_steps.append({"action": "clean_text", "items": clean_items})
+        if replace_items:
+            other_steps.append({"action": "replace_values", "items": replace_items})
         return {
             "name": preset.meta.name,
             "description": preset.meta.description or "",
             "source_columns": preset.meta.source_columns or [],
-            "steps": [s.model_dump() for s in preset.steps],
+            "source_types": preset.meta.source_types or {},
+            "source_file": preset.meta.source_file or "",
+            "steps": other_steps,
         }

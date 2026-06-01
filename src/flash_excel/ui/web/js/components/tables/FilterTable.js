@@ -18,17 +18,20 @@ export default {
   data() { return { combine: 'AND', conditions: [], ops: OPS }; },
   watch: {
     payload: { immediate: true, handler(v) {
+      if (this._emitting) return;
       this.combine = v.combine || 'AND';
-      this.conditions = (v.conditions?.length) ? JSON.parse(JSON.stringify(v.conditions)) : [];
+      this.conditions = (v.conditions?.length) ? structuredClone(v.conditions) : [];
     }},
   },
   methods: {
     emit() {
+      this._emitting = true;
       this.$emit('update:payload', {
         action: 'filter_rows',
         combine: this.combine,
         conditions: this.conditions.filter(c => c.column && c.value !== ''),
       });
+      this.$nextTick(() => { this._emitting = false; });
     },
     setCombine(v)  { this.combine = v; this.emit(); },
     addRow()       { this.conditions.push({ column: this.columns[0] || '', operator: 'eq', value: '' }); this.emit(); },

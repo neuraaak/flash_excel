@@ -3,10 +3,12 @@ export default {
   props: { columns: { type: Array, default: () => [] }, payload: { type: Object, default: () => ({}) } },
   emits: ['update:payload'],
   inject: ['i18n'],
+  data() { return { rows: [] }; },
   computed: {
     t() { return this.i18n.t; },
+    usedCols() { return new Set(this.rows.map(r => r.col).filter(Boolean)); },
+    availableForNew() { return this.columns.filter(c => !this.usedCols.has(c)); },
   },
-  data() { return { rows: [] }; },
   watch: {
     payload: { immediate: true, handler(v) {
       const by = v.by || [];
@@ -19,9 +21,14 @@ export default {
       const valid = this.rows.filter(r => r.col);
       this.$emit('update:payload', { action: 'sort_rows', by: valid.map(r => r.col), descending: valid.map(r => r.desc) });
     },
+    availableForRow(row) { return this.columns.filter(c => c === row.col || !this.usedCols.has(c)); },
     setDir(i, desc) { this.rows[i].desc = desc; this.emit(); },
-    addRow()        { this.rows.push({ col: this.columns[0] || '', desc: false }); this.emit(); },
-    removeRow(i)    { this.rows.splice(i, 1); this.emit(); },
+    addRow() {
+      const next = this.availableForNew[0] || this.columns[0] || '';
+      this.rows.push({ col: next, desc: false });
+      this.emit();
+    },
+    removeRow(i) { this.rows.splice(i, 1); this.emit(); },
   },
   template: `
     <div>
@@ -31,7 +38,7 @@ export default {
           <span class="select-wrap">
             <select v-model="r.col" @change="emit">
               <option v-if="r.col && !columns.includes(r.col)" :value="r.col">{{ r.col }}</option>
-              <option v-for="c in columns" :key="c" :value="c">{{ c }}</option>
+              <option v-for="c in availableForRow(r)" :key="c" :value="c">{{ c }}</option>
             </select>
           </span>
           <span class="seg">
@@ -43,7 +50,7 @@ export default {
           </button>
         </div>
       </div>
-      <button class="add-rule" @click="addRow">
+      <button class="add-rule" @click="addRow" :disabled="availableForNew.length === 0">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
         {{ t('table.add_rule') }}
       </button>

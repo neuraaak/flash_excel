@@ -6,7 +6,9 @@ export default {
   'file.load':    'Load a file',
   'file.loaded':  'File loaded',
   'file.change':  'Change',
-  'file.clear':   'Clear',
+  'file.clear':          'Clear',
+  'file.template_hint':    'Template model · file may no longer exist on this machine',
+  'file.template_unknown': 'Template model',
 
   // ActionSteps — liste des actions
   'steps.rename':       'Rename columns',
@@ -45,7 +47,10 @@ export default {
 
   // Toolbar buttons
   'toolbar.save':   'Save',
-  'toolbar.delete': 'Delete',
+  'toolbar.delete':        'Delete',
+  'preset.delete_title':   'Delete preset',
+  'preset.delete_subtitle':'This action cannot be undone.',
+  'preset.delete_confirm': 'Are you sure you want to delete',
   'toolbar.export': 'Export',
 
   // Tables — labels communs
@@ -71,6 +76,43 @@ export default {
   'table.dedupe_cols': 'Deduplication keys',
   'table.sort_keys':   'Sort keys',
   'table.col_order':   'Column order',
+
+  // Clean text modal
+  'clean.cols':         'Target columns',
+  'clean.ops':          'Operations',
+  'clean.op_trim':      'Trim whitespace',
+  'clean.op_collapse':  'Collapse spaces',
+  'clean.op_accents':   'Remove accents',
+  'clean.op_special':   'Remove special characters',
+  'clean.case':         'Case conversion',
+  'clean.case_none':    'None',
+  'clean.case_lower':   'lower',
+  'clean.case_upper':   'UPPER',
+  'clean.case_title':   'Title',
+  'clean.configure':    'Add clean action',
+  'clean.new':          'New clean action',
+  'clean.edit':         'Edit clean action',
+  'clean.modal_sub':    'Pick the columns and the transforms applied to them.',
+
+  // Computed column modal
+  'computed.add':         'Add computed column',
+  'computed.col_name':    'New column name',
+  'computed.edit_title':  'Edit computed column',
+  'computed.add_title':   'New computed column',
+
+  // Modal actions
+  'modal.cancel': 'Cancel',
+  'modal.save':   'Save',
+  'modal.add':    'Add',
+
+  // File mismatch modal
+  'mismatch.title':    'Column layout changed',
+  'mismatch.subtitle': 'The file structure differs from what is saved in this preset.',
+  'mismatch.missing':  'Columns no longer in file',
+  'mismatch.added':    'New columns in file',
+  'mismatch.ignore':   'Ignore differences',
+  'mismatch.cleanup':  'Load & clean up references',
+  'mismatch.load':     'Load file',
 
   // Settings modal
   'settings.title':      'Settings',

@@ -18,6 +18,7 @@ from __future__ import annotations
 # ///////////////////////////////////////////////////////////////
 # Local imports — side-effect imports that populate the REGISTRY
 from .cast import cast_types
+from .clean import clean_text
 from .computed import add_computed_column
 from .deduplicate import deduplicate_rows
 from .drop import drop_columns
@@ -28,7 +29,6 @@ from .reorder import reorder_columns
 from .replace import replace_values
 from .select import select_columns
 from .sort import sort_rows
-from .trim import trim_whitespace
 
 # ///////////////////////////////////////////////////////////////
 # PUBLIC API
@@ -37,6 +37,7 @@ from .trim import trim_whitespace
 __all__ = [
     "add_computed_column",
     "cast_types",
+    "clean_text",
     "deduplicate_rows",
     "drop_columns",
     "fill_nulls",
@@ -46,5 +47,4 @@ __all__ = [
     "reorder_columns",
     "select_columns",
     "sort_rows",
-    "trim_whitespace",
 ]

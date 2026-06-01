@@ -103,6 +103,21 @@
 .file-loaded__name { font-size: var(--fs-md); font-weight: 600; color: var(--text_primary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .file-loaded__size { font-size: var(--fs-xs); color: var(--text_secondary); margin-top: 2px; }
 
+/* ── File template state ─────────────────────────── */
+.file-template {
+  height: 64px; background: var(--surface_base);
+  border: 1.5px dashed var(--border_subtle);
+  border-radius: var(--r-lg); display: flex; align-items: center; gap: 12px;
+  padding: 0 14px; opacity: .75;
+}
+.file-template__icon { flex: 0 0 auto; color: var(--text_secondary); }
+.file-template__meta { flex: 1 1 auto; min-width: 0; }
+.file-template__name {
+  font-size: var(--fs-md); font-weight: 600; color: var(--text_secondary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.file-template__hint { font-size: var(--fs-xs); color: var(--text_secondary); margin-top: 2px; }
+
 /* ── Step 2 Action Config ────────────────────────── */
 .config { display: flex; gap: var(--gap); min-height: 380px; }
 
@@ -449,8 +464,82 @@
   font-size: var(--fs-sm);
 }
 
-/* Sidebar bottom (bouton settings) */
-.sidebar-bottom {
-  margin-top: auto; padding-bottom: 10px;
-  display: flex; flex-direction: column; align-items: center;
+
+/* ── Generic modal ───────────────────────────────── */
+.modal-overlay {
+  position: fixed; inset: 0;
+  background: var(--overlay_scrim);
+  display: flex; align-items: center; justify-content: center;
+  z-index: 200;
+  animation: fade-in .15s ease-out;
 }
+.modal {
+  background: var(--surface_raised);
+  border: 1px solid var(--border_subtle);
+  border-radius: var(--r-xl);
+  width: 480px; max-width: calc(100vw - 32px);
+  max-height: calc(100vh - 80px);
+  box-shadow: 0 16px 48px rgba(0,0,0,.45);
+  display: flex; flex-direction: column;
+  animation: modal-in .18s ease-out;
+}
+.modal-head {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid var(--border_subtle);
+  flex: 0 0 auto;
+}
+.modal-title { font-size: var(--fs-md); font-weight: 600; }
+.modal-body {
+  padding: 18px 16px; overflow-y: auto;
+  flex: 1 1 auto; display: flex; flex-direction: column; gap: 18px;
+}
+.modal-foot {
+  display: flex; align-items: center; justify-content: flex-end; gap: 8px;
+  padding: 12px 16px; border-top: 1px solid var(--border_subtle);
+  flex: 0 0 auto;
+}
+
+/* ── Mismatch modal ──────────────────────────────── */
+.modal-head h3 { font-size: var(--fs-md); font-weight: 600; }
+.modal-head p  { font-size: var(--fs-sm); color: var(--text_secondary); margin-top: 3px; }
+.mismatch-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
+.mismatch-chip {
+  font-size: var(--fs-xs); font-family: var(--mono); padding: 3px 10px; border-radius: 20px;
+  background: var(--surface_overlay); border: 1px solid var(--border_subtle);
+  color: var(--text_primary); white-space: nowrap;
+}
+.mismatch-chip--warn {
+  background: color-mix(in srgb, var(--semantic_warning) 14%, transparent);
+  border-color: color-mix(in srgb, var(--semantic_warning) 45%, transparent);
+  color: var(--semantic_warning);
+}
+
+/* ── Clean row summary ───────────────────────────── */
+.clean-row {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 12px;
+  background: var(--surface_base); border: 1px solid var(--border_subtle);
+  border-radius: var(--r-md);
+}
+.clean-tags { display: flex; flex-wrap: wrap; gap: 5px; flex: 1 1 auto; min-width: 0; }
+.tag {
+  font-size: 11px; font-family: var(--mono); padding: 3px 8px; border-radius: 20px;
+  background: var(--accent_weak); border: 1px solid var(--accent_line);
+  color: var(--text_primary); white-space: nowrap;
+}
+.tag.op {
+  background: var(--surface_floating); border-color: var(--border_subtle);
+  color: var(--text_secondary);
+}
+.clean-actions { display: flex; gap: 6px; flex: 0 0 auto; }
+
+/* ── Ops list (clean modal) ──────────────────────── */
+.ops-list { display: flex; flex-direction: column; gap: 6px; }
+.op-row {
+  display: flex; align-items: center; gap: 12px; height: 40px; padding: 0 12px;
+  background: var(--surface_base); border: 1px solid var(--border_subtle);
+  border-radius: var(--r-md); cursor: pointer; transition: border-color .12s;
+}
+.op-row:hover { border-color: var(--text_secondary); }
+.op-row.on { border-color: var(--accent_line); }
+.op-name { flex: 1 1 auto; font-weight: 500; }

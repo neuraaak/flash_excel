@@ -41,7 +41,7 @@ RECOMMENDED_ACTION_ORDER: tuple[str, ...] = (
     "select_columns",
     "drop_columns",
     "cast_types",
-    "trim_whitespace",
+    "clean_text",
     "replace_values",
     "fill_nulls",
     "add_computed_column",
@@ -246,18 +246,27 @@ class DeduplicateRowsStep(BaseModel):
     keep: Literal["first", "last", "none"] = "first"
 
 
-class TrimWhitespaceStep(BaseModel):
-    """Step that trims surrounding spaces in string columns.
+class CleanTextStep(BaseModel):
+    """Step that applies text cleaning operations to string columns.
 
     Example:
-        >>> step = TrimWhitespaceStep(
-        ...     action="trim_whitespace",
+        >>> step = CleanTextStep(
+        ...     action="clean_text",
         ...     columns=["name", "city"],
+        ...     ops=["trim", "collapse"],
+        ...     case="lower",
         ... )
     """
 
-    action: Literal["trim_whitespace"]
-    columns: list[str] = Field(..., min_length=1, description="String columns to trim.")
+    action: Literal["clean_text"]
+    columns: list[str] = Field(
+        ..., min_length=1, description="String columns to clean."
+    )
+    ops: list[Literal["trim", "collapse", "accents", "special"]] = Field(
+        default_factory=list,
+        description="Cleaning operations to apply: trim, collapse, accents, special.",
+    )
+    case: Literal["none", "lower", "upper", "title"] = "none"
 
 
 # ------------------------------------------------
@@ -317,6 +326,7 @@ class SortRowsStep(BaseModel):
 Step = Annotated[
     AddComputedColumnStep
     | CastTypesStep
+    | CleanTextStep
     | DeduplicateRowsStep
     | DropColumnsStep
     | FillNullsStep
@@ -325,8 +335,7 @@ Step = Annotated[
     | ReorderColumnsStep
     | ReplaceValuesStep
     | SelectColumnsStep
-    | SortRowsStep
-    | TrimWhitespaceStep,
+    | SortRowsStep,
     Field(discriminator="action"),
 ]
 
@@ -358,6 +367,7 @@ class PresetMeta(BaseModel):
     csv_encoding: str = "utf8-lossy"
     source_columns: list[str] = Field(default_factory=list)
     source_types: dict[str, str] = Field(default_factory=dict)
+    source_file: str = ""
 
 
 class Preset(BaseModel):
@@ -384,6 +394,7 @@ class Preset(BaseModel):
 __all__ = [
     "AddComputedColumnStep",
     "CastTypesStep",
+    "CleanTextStep",
     "DeduplicateRowsStep",
     "DropColumnsStep",
     "FillNullsStep",
@@ -399,5 +410,4 @@ __all__ = [
     "SelectColumnsStep",
     "SortRowsStep",
     "Step",
-    "TrimWhitespaceStep",
 ]

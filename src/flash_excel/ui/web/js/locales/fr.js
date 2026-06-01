@@ -6,7 +6,9 @@ export default {
   'file.load':    'Charger un fichier',
   'file.loaded':  'Fichier chargé',
   'file.change':  'Changer',
-  'file.clear':   'Effacer',
+  'file.clear':          'Effacer',
+  'file.template_hint':    'Fichier modèle · peut ne plus exister sur cette machine',
+  'file.template_unknown': 'Fichier modèle',
 
   // ActionSteps — liste des actions
   'steps.rename':       'Renommer les colonnes',
@@ -45,7 +47,10 @@ export default {
 
   // Toolbar buttons
   'toolbar.save':   'Enregistrer',
-  'toolbar.delete': 'Supprimer',
+  'toolbar.delete':        'Supprimer',
+  'preset.delete_title':   'Supprimer le preset',
+  'preset.delete_subtitle':'Cette action est irréversible.',
+  'preset.delete_confirm': 'Voulez-vous vraiment supprimer',
   'toolbar.export': 'Exporter',
 
   // Tables — labels communs
@@ -71,6 +76,43 @@ export default {
   'table.dedupe_cols': 'Clés de déduplication',
   'table.sort_keys':   'Clés de tri',
   'table.col_order':   'Ordre des colonnes',
+
+  // Clean text modal
+  'clean.cols':         'Colonnes cibles',
+  'clean.ops':          'Opérations',
+  'clean.op_trim':      'Supprimer les espaces',
+  'clean.op_collapse':  'Réduire les espaces multiples',
+  'clean.op_accents':   'Supprimer les accents',
+  'clean.op_special':   'Supprimer les caractères spéciaux',
+  'clean.case':         'Casse',
+  'clean.case_none':    'Aucune',
+  'clean.case_lower':   'minuscules',
+  'clean.case_upper':   'MAJUSCULES',
+  'clean.case_title':   'Titre',
+  'clean.configure':    'Ajouter une action de nettoyage',
+  'clean.new':          'Nouvelle action de nettoyage',
+  'clean.edit':         'Modifier l\'action de nettoyage',
+  'clean.modal_sub':    'Choisissez les colonnes et les transformations à appliquer.',
+
+  // Computed column modal
+  'computed.add':         'Ajouter une colonne calculée',
+  'computed.col_name':    'Nom de la nouvelle colonne',
+  'computed.edit_title':  'Modifier la colonne calculée',
+  'computed.add_title':   'Nouvelle colonne calculée',
+
+  // Modal actions
+  'modal.cancel': 'Annuler',
+  'modal.save':   'Enregistrer',
+  'modal.add':    'Ajouter',
+
+  // File mismatch modal
+  'mismatch.title':    'Structure de colonnes modifiée',
+  'mismatch.subtitle': 'La structure du fichier diffère de celle enregistrée dans ce préréglage.',
+  'mismatch.missing':  'Colonnes absentes du fichier',
+  'mismatch.added':    'Nouvelles colonnes dans le fichier',
+  'mismatch.ignore':   'Ignorer les différences',
+  'mismatch.cleanup':  'Charger et nettoyer les références',
+  'mismatch.load':     'Charger le fichier',
 
   // Settings modal
   'settings.title':      'Paramètres',

@@ -8,7 +8,17 @@ export default {
   emits: ['navigate'],
 
   data() {
-    return { showSettings: false };
+    return {
+      showSettings:    false,
+      sidebarExpanded: localStorage.getItem('fx_sidebar') === '1',
+    };
+  },
+
+  methods: {
+    toggleSidebar() {
+      this.sidebarExpanded = !this.sidebarExpanded;
+      localStorage.setItem('fx_sidebar', this.sidebarExpanded ? '1' : '0');
+    },
   },
 
   template: `
@@ -16,26 +26,56 @@ export default {
 
       <!-- Main (sidebar + page area) -->
       <div class="main">
-        <nav class="sidebar">
-          <div class="sidebar-logo">
-            <div class="logo">F</div>
-          </div>
-          <div class="sidebar-nav">
-            <button class="nav-btn" :class="{ active: currentPage === 'presets' }"
-              title="Presets" @click="$emit('navigate', 'presets')">
-              <LucideIcon name="presets" :size="20" />
-            </button>
-            <button class="nav-btn" :class="{ active: currentPage === 'processing' }"
-              title="Processing" @click="$emit('navigate', 'processing')">
-              <LucideIcon name="processing" :size="20" />
-            </button>
-          </div>
-          <div class="sidebar-bottom">
-            <button class="nav-btn" :class="{ active: showSettings }"
-              title="Settings" @click="showSettings = true">
+        <nav class="sidebar" :class="{ expanded: sidebarExpanded }">
+
+          <!-- Toggle -->
+          <button class="nav-btn nav-toggle" @click="toggleSidebar" title="Toggle menu">
+            <span class="nav-ico">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round">
+                <path d="M4 6h16M4 12h16M4 18h16"/>
+              </svg>
+            </span>
+            <span class="nav-label">Menu</span>
+          </button>
+
+          <div class="nav-sep"></div>
+
+          <!-- Presets -->
+          <button class="nav-btn" :class="{ active: currentPage === 'presets' }"
+            title="Presets" @click="$emit('navigate', 'presets')">
+            <span class="nav-ico">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M5 7h6M5 12h10M5 17h6"/>
+                <circle cx="17" cy="7" r="2"/>
+                <circle cx="18" cy="17" r="2"/>
+              </svg>
+            </span>
+            <span class="nav-label">Presets</span>
+          </button>
+
+          <!-- Processing -->
+          <button class="nav-btn" :class="{ active: currentPage === 'processing' }"
+            title="Processing" @click="$emit('navigate', 'processing')">
+            <span class="nav-ico">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M13 2L4.5 13H11l-1 9 8.5-11.5H12z"/>
+              </svg>
+            </span>
+            <span class="nav-label">Processing</span>
+          </button>
+
+          <div class="nav-spacer"></div>
+          <div class="nav-sep"></div>
+
+          <!-- Settings -->
+          <button class="nav-btn" :class="{ active: showSettings }"
+            title="Settings" @click="showSettings = true">
+            <span class="nav-ico">
               <LucideIcon name="settings" :size="18" />
-            </button>
-          </div>
+            </span>
+            <span class="nav-label">Settings</span>
+          </button>
+
         </nav>
 
         <div class="page-area">
