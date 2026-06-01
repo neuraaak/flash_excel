@@ -81,6 +81,42 @@ def write_csv(
     df.write_csv(path, separator=separator)
 
 
+def write_parquet(df: pl.DataFrame, path: Path) -> None:
+    """Write a DataFrame to a Parquet file.
+
+    Creates any missing parent directories before writing.
+
+    Args:
+        df: DataFrame to write.
+        path: Destination path for the ``.parquet`` file.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    df.write_parquet(path)
+
+
+def write_dataframe(df: pl.DataFrame, path: Path, fmt: str) -> None:
+    """Dispatch DataFrame writing based on format.
+
+    Args:
+        df: DataFrame to write.
+        path: Destination path (extension must match fmt).
+        fmt: One of ``'xlsx'``, ``'csv'``, ``'parquet'``. Never ``'keep'`` — resolve first.
+
+    Raises:
+        ValueError: If fmt is not a supported format.
+    """
+    if fmt == "xlsx":
+        write_excel(df, path)
+    elif fmt == "csv":
+        write_csv(df, path)
+    elif fmt == "parquet":
+        write_parquet(df, path)
+    else:
+        raise ValueError(
+            f"Unsupported format: {fmt!r}. Expected 'xlsx', 'csv', or 'parquet'."
+        )
+
+
 # ///////////////////////////////////////////////////////////////
 # PUBLIC API
 # ///////////////////////////////////////////////////////////////
@@ -88,4 +124,6 @@ def write_csv(
 __all__ = [
     "write_excel",
     "write_csv",
+    "write_parquet",
+    "write_dataframe",
 ]
