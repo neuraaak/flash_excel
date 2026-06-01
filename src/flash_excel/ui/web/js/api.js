@@ -32,6 +32,6 @@ export const api = {
 
   // Settings & themes
   getAppConfig:   ()                 => call('get_app_config'),
-  saveAppConfig:  (palette, mode)    => call('save_app_config', palette, mode),
+  saveAppConfig:  (palette, mode, locale = 'en') => call('save_app_config', palette, mode, locale),
   getThemes:      ()                 => call('get_themes'),
 };
