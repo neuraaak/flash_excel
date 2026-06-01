@@ -30,6 +30,11 @@ export const api = {
   getStepPayload: (action)           => call('get_step_payload', action),
   setStepPayload: (action, payload)  => call('set_step_payload', action, payload),
 
+  // Processing
+  runPreset: (presetPath, filePath, outputConfig) =>
+    call('run_preset', presetPath, filePath, outputConfig),
+  stopRun: () => call('stop_run'),
+
   // Settings & themes
   getAppConfig:   ()                 => call('get_app_config'),
   saveAppConfig:  (palette, mode, locale = 'en') => call('save_app_config', palette, mode, locale),
