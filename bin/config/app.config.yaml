@@ -1,0 +1,22 @@
+# ///////////////////////////////////////////////////////////////
+# Flash-Excel — Configuration utilisateur
+# Ce fichier est géré automatiquement par l'application.
+# Vous pouvez l'éditer manuellement ; les changements seront
+# pris en compte au prochain démarrage.
+# ///////////////////////////////////////////////////////////////
+
+# //////
+# Apparence
+appearance:
+  # Palette de couleurs active.
+  # Valeurs disponibles : blue-gray | github-dark | warm-dark
+  palette: blue-gray
+
+  # Mode d'affichage.
+  # Valeurs disponibles : dark | light
+  mode: dark
+
+# //////
+# Langue
+# Valeurs disponibles : en | fr
+locale: en

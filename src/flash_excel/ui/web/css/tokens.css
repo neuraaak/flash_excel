@@ -1,0 +1,57 @@
+:root {
+  --surface_sunken:   rgb(22, 26, 32);
+  --surface_base:     rgb(27, 31, 39);
+  --surface_raised:   rgb(33, 37, 46);
+  --surface_overlay:  rgb(44, 51, 64);
+  --surface_floating: rgb(52, 59, 74);
+  --border_subtle:    rgb(54, 61, 76);
+  --accent_brand:     #96CD32;
+  --text_primary:     rgb(218, 220, 228);
+  --text_secondary:   rgb(122, 134, 158);
+  --text_on_accent:   rgb(255, 255, 255);
+  --semantic_success: #4ade80;
+  --semantic_warning: #fbbf24;
+  --semantic_error:   #f87171;
+  --semantic_info:    #60a5fa;
+
+  --accent_weak:   color-mix(in srgb, var(--accent_brand) 16%, transparent);
+  --accent_weaker: color-mix(in srgb, var(--accent_brand) 9%, transparent);
+  --accent_line:   color-mix(in srgb, var(--accent_brand) 50%, transparent);
+
+  --overlay_scrim: rgba(33, 37, 46, 0.88);
+
+  --r-sm: 4px; --r-md: 5px; --r-lg: 6px; --r-xl: 7px;
+  --ctl-h: 34px;
+  --row-h: 32px;
+  --gap: 14px;
+  --pad-x: 22px;
+  --col-side: 56px;
+  --col-presets: 246px;
+
+  --fs-xs: 11px; --fs-sm: 12px; --fs-md: 13px; --fs-lg: 15px; --fs-xl: 17px;
+  --font: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: "Cascadia Code", "Consolas", ui-monospace, monospace;
+
+  /* Backward-compat aliases for action table components */
+  --surface-sunken:   var(--surface_sunken);
+  --surface-base:     var(--surface_base);
+  --surface-raised:   var(--surface_raised);
+  --surface-overlay:  var(--surface_overlay);
+  --surface-floating: var(--surface_floating);
+  --border-subtle:    var(--border_subtle);
+  --accent-brand:     var(--accent_brand);
+  --text-primary:     var(--text_primary);
+  --text-secondary:   var(--text_secondary);
+  --text-on-accent:   var(--text_on_accent);
+  --semantic-error:   var(--semantic_error);
+  --sp-1: 4px; --sp-2: 8px; --sp-3: 12px; --sp-4: 16px;
+  --text-xs: var(--fs-xs);
+  --text-sm: var(--fs-sm);
+  --text-md: var(--fs-md);
+  --text-lg: var(--fs-lg);
+}
+
+[data-density="compact"] {
+  --ctl-h: 30px; --row-h: 28px; --gap: 10px; --pad-x: 16px; --fs-md: 12px;
+  --col-presets: 220px;
+}

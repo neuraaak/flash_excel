@@ -263,3 +263,6 @@ temp_projects/
 # Configuration locale utilisateur
 local_config/
 user_settings/
+bin/presets
+.remember
+docs/superpowers

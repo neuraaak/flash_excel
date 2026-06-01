@@ -2,13 +2,20 @@
 # MKDOCS CONFIGURATION
 # ///////////////////////////////////////////////////////////////
 
-site_name: FlashExcel Documentation
+site_name: Flash-Excel Documentation
 site_description: A short description of your project
 site_author: Neuraaak
 site_url: https://neuraaak.github.io/flash-excel/
 repo_url: https://github.com/neuraaak/flash-excel
 repo_name: neuraaak/flash-excel
 edit_uri: edit/main/docs/
+
+strict: true
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
 
 # ///////////////////////////////////////////////////////////////
 # THEME
@@ -44,6 +51,7 @@ theme:
     - content.code.copy
     - content.code.annotate
     - content.tabs.link
+    - content.tooltips
     - toc.follow
   icon:
     repo: fontawesome/brands/github
@@ -64,12 +72,12 @@ nav:
       - Configuration: guides/configuration.md
       - Development: guides/development.md
       - Testing: guides/testing.md
+  - Concepts:
+      - concepts/index.md
   - API Reference:
       - api/index.md
       - Auto-Generated:
           - api/reference/index.md
-  # - CLI Reference:
-  #     - cli/index.md
   - Examples:
       - examples/index.md
   - Architecture: architecture.md
@@ -93,8 +101,8 @@ plugins:
           paths: [src]
           options:
             docstring_style: google
-            docstring_section_style: spacy
-            show_source: true
+            docstring_section_style: table
+            show_source: false
             show_root_heading: true
             show_root_full_path: false
             show_symbol_type_heading: true
@@ -103,6 +111,7 @@ plugins:
             separate_signature: true
             signature_crossrefs: true
             members_order: source
+            group_by_category: true
             merge_init_into_class: true
             filters:
               - "!^_"
@@ -115,6 +124,10 @@ plugins:
 markdown_extensions:
   - admonition
   - pymdownx.details
+  - pymdownx.caret
+  - pymdownx.tilde
+  - pymdownx.critic
+  - pymdownx.betterem
   - pymdownx.superfences:
       custom_fences:
         - name: mermaid
@@ -127,15 +140,22 @@ markdown_extensions:
   - pymdownx.inlinehilite
   - pymdownx.tabbed:
       alternate_style: true
-  - pymdownx.snippets
+  - pymdownx.snippets:
+      check_paths: true
+      base_path: ['.', 'docs']
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - pymdownx.magiclink:
+      repo_url_shorthand: true
+      user: neuraaak
+      repo: flash-excel
   - pymdownx.keys
   - pymdownx.mark
   - pymdownx.smartsymbols
   - pymdownx.tasklist:
       custom_checkbox: true
+  - abbr
   - attr_list
   - md_in_html
   - def_list
@@ -151,6 +171,8 @@ markdown_extensions:
 # ///////////////////////////////////////////////////////////////
 
 extra:
+  version:
+    provider: mike
   social:
     - icon: fontawesome/brands/github
       link: https://github.com/neuraaak/flash-excel
@@ -158,9 +180,10 @@ extra:
     - icon: fontawesome/brands/python
       link: https://pypi.org/project/flash-excel/
       name: PyPI Package
+
 extra_css:
   - stylesheets/extra.css
 
 copyright: >
-  Copyright &copy; 2026 Neuraaak -
-  <a href="https://github.com/neuraaak/flash-excel/blob/main/LICENSE">MIT License</a>
+  Copyright &copy; {{ year }} Neuraaak -
+  <a href="https://github.com/neuraaak/flash-excel/blob/main/LICENSE">License</a>

@@ -1,0 +1,128 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Flash-Excel</title>
+  <link rel="stylesheet" href="css/tokens.css" />
+  <link rel="stylesheet" href="css/app.css" />
+  <link rel="stylesheet" href="css/presets.css" />
+  <link rel="stylesheet" href="css/processing.css" />
+  <!-- Tailwind Play CDN — vendorisé localement pour fonctionnement offline.
+       Utilitaires layout/spacing/typography uniquement.
+       Les couleurs tw-* pointent vers nos CSS custom properties (YAML → CSS vars)
+       pour que le switching de thème live reste opérationnel. -->
+  <script src="./js/vendor/tailwind.js"></script>
+  <script>
+    tailwind.config = {
+      // Désactiver le preflight pour ne pas écraser nos styles globaux
+      corePlugins: { preflight: false },
+      theme: {
+        extend: {
+          colors: {
+            // Surfaces — préfixe tw- pour distinguer de Tailwind natif
+            'tw-sunken':   'var(--surface_sunken)',
+            'tw-base':     'var(--surface_base)',
+            'tw-raised':   'var(--surface_raised)',
+            'tw-overlay':  'var(--surface_overlay)',
+            'tw-floating': 'var(--surface_floating)',
+            'tw-border':   'var(--border_subtle)',
+            // Accent
+            'tw-accent':         'var(--accent_brand)',
+            'tw-accent-weak':    'var(--accent_weak)',
+            'tw-accent-line':    'var(--accent_line)',
+            // Texte
+            'tw-text':           'var(--text_primary)',
+            'tw-text-muted':     'var(--text_secondary)',
+            'tw-text-on-accent': 'var(--text_on_accent)',
+            // Sémantiques
+            'tw-success': 'var(--semantic_success)',
+            'tw-warning': 'var(--semantic_warning)',
+            'tw-error':   'var(--semantic_error)',
+            'tw-info':    'var(--semantic_info)',
+          },
+        },
+      },
+    };
+  </script>
+</head>
+<body>
+  <div id="app">
+    <div style="display:flex;align-items:center;justify-content:center;height:100%;color:#7a869e;font-size:13px;">
+      Loading…
+    </div>
+  </div>
+
+  <script type="module">
+    import { createApp } from './js/vendor/vue.esm-browser.prod.js';
+    import AppShell     from './js/components/AppShell.js';
+    import PresetsPage     from './js/pages/Presets.js';
+    import ProcessingPage  from './js/pages/Processing.js';
+    import { i18n }     from './js/i18n.js';
+
+    // Tokens CSS appliqués depuis une palette YAML
+    const THEME_TOKENS = [
+      'surface_sunken', 'surface_base', 'surface_raised',
+      'surface_overlay', 'surface_floating', 'border_subtle',
+      'accent_brand', 'text_primary', 'text_secondary', 'text_on_accent',
+      'overlay_scrim',
+      'semantic_success', 'semantic_warning', 'semantic_error', 'semantic_info',
+    ];
+
+    async function initTheme() {
+      try {
+        const [cfgRes, themesRes] = await Promise.all([
+          globalThis.pywebview.api.get_app_config(),
+          globalThis.pywebview.api.get_themes(),
+        ]);
+        if (!cfgRes.ok || !themesRes.ok) return;
+        const { palette, mode } = cfgRes.data.appearance;
+        i18n.setLocale(cfgRes.data.locale ?? 'en');
+        const tokens = themesRes.data[palette]?.[mode];
+        if (!tokens) return;
+        const root = document.documentElement;
+        for (const key of THEME_TOKENS) {
+          if (tokens[key]) root.style.setProperty(`--${key}`, tokens[key]);
+        }
+      } catch (e) { console.warn('[theme] init failed, using CSS defaults:', e); }
+    }
+
+    const App = {
+      name: 'App',
+      components: { AppShell, PresetsPage, ProcessingPage },
+      data() {
+        return { currentPage: 'processing', toasts: [] };
+      },
+      methods: {
+        navigate(page) { this.currentPage = page; },
+        showToast(message, type = 'success') {
+          const id = Date.now();
+          this.toasts.push({ id, message, type });
+          setTimeout(() => { this.toasts = this.toasts.filter(t => t.id !== id); }, 3500);
+        },
+      },
+      provide() {
+        return { navigate: this.navigate, showToast: this.showToast, i18n };
+      },
+      template: `
+        <AppShell :currentPage="currentPage" @navigate="navigate">
+          <PresetsPage v-show="currentPage === 'presets'" />
+          <ProcessingPage v-show="currentPage === 'processing'" />
+        </AppShell>
+        <div class="toast-container">
+          <div v-for="t in toasts" :key="t.id" class="toast" :class="'toast--' + t.type">{{ t.message }}</div>
+        </div>
+      `,
+    };
+
+    if (!globalThis.pywebview) {
+      await Promise.race([
+        new Promise(r => globalThis.addEventListener('pywebviewready', r, { once: true })),
+        new Promise(r => setTimeout(r, 1000)),
+      ]);
+    }
+    await initTheme();
+    createApp(App).mount('#app');
+  </script>
+</body>
+</html>
