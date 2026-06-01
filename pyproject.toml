@@ -14,7 +14,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "flash-excel"
-version = "1.0.0"
+version = "1.1.0"
 description = "A short description of flash-excel"
 readme = "README.md"
 license = { text = "MIT" }
@@ -44,6 +44,7 @@ classifiers = [
 dependencies = [
     "pywebview>=5.0.0",
     "ezplog>=1.5.0",
+    "tufup>=0.9.0",
     "fastexcel>=0.11.0",
     "polars>=1.0.0",
     "pydantic>=2.0.0",
@@ -78,6 +79,7 @@ dev = [
     # Build and distribution
     "build>=1.0.0",
     "twine>=4.0.0",
+    "ezcompiler>=2.3.0",
 ]
 test = [
     "pytest>=7.0.0",
@@ -117,54 +119,46 @@ PyPI = "https://pypi.org/project/flash-excel/"
 # [project.scripts]
 # "{{my_project}}" = "{{my_project}}.module:main"
 
-# ///////////////////////////////////////////////////////////////
-# 📦 SETUPTOOLS CONFIGURATION
-# Package discovery and inclusion/exclusion patterns
+# /////////////////////////////////////////////////////////////////////
+# 📦 COMPILER CONFIGURATION
+# ezcompiler settings for building and distributing the application
 # /////////////////////////////////////////////////////////////////////
 
-[tool.hatch.build.targets.wheel]
-packages = ["src/flash_excel"]
+[tool.ezcompiler]
+# Compilation
+main_file = "main.py"
+output_folder = "dist/Flash-Excel"
+compiler = "PyInstaller"
+console = false
+optimize = true
+strip = false
+debug = false
+icon = "bin/assets/images/logo.ico"
 
-[tool.hatch.build.targets.sdist]
-exclude = [
-    # Dev tooling & scripts
-    ".scripts",
-    ".hooks",
-    ".pre-commit-config.yaml",
-    # Test & coverage
-    "tests",
-    "htmlcov",
-    ".coverage",
-    "coverage.xml",
-    ".pytest_cache",
-    # Documentation
-    "docs",
-    "examples",
-    "mkdocs.yml",
-    "cliff.toml",
-    # VCS & caches
-    ".git",
-    ".ruff_cache",
-    ".mypy_cache",
-    # Virtual envs
-    ".venv",
-    "venv",
-    # Byte-compiled / optimized files
-    "*.pyc",
-    "*.pyo",
-    "__pycache__",
-    # Logs & temp
-    "*.log",
-    ".tmp",
-    # Build artifacts
-    "dist",
-    "build",
-    "*.egg-info",
-    # IDE & OS
-    ".cursor",
-    ".DS_Store",
-    "Thumbs.db",
-]
+# Bundled assets
+# Note: bin/tufup/metadata/root.json est ajouté automatiquement par build.py
+# si disponible (généré par publish.py lors de la première release).
+include_files = { files = [], folders = ["bin"] }
+packages = []
+includes = []
+excludes = ["tkinter", "unittest", "xmlrpc", "pydoc", "doctest"]
+
+# Packaging
+zip_needed = false
+repo_needed = false
+upload_structure = "disk"
+repo_path = "releases"
+
+# PyInstaller-specific options
+[tool.ezcompiler.compiler_options]
+onefile = false                   # Mode dossier (onedir) — pas de .exe unique
+contents-directory = "."          # Désactive _internal: tout à plat dans dist/
+collect-all = "webview"           # Collecte tous les assets/hooks de pywebview
+collect-data = "flash_excel"      # Collecte les données du package (web/, assets...)
+exclude-module = "webview.platforms.android"  # Pas de module Android sous Windows
+# Note: compiler_options est un dict (une valeur par clé).
+# Pour des flags supplémentaires (ex: hidden-import), les ajouter ici
+# avec des noms distincts, ex: hidden-import = "webview.platforms.winforms"
 
 # /////////////////////////////////////////////////////////////////////
 # 🎨 CODE FORMATTING & LINTING TOOLS

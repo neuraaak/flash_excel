@@ -11,9 +11,12 @@ os.environ.setdefault("PYWEBVIEW_LOG", "WARNING")
 
 import webview  # type: ignore[import-untyped]  # noqa: E402
 
+from flash_excel.paths import BIN_DIR
 from flash_excel.ui.api import FlashExcelAPI
+from flash_excel.updater import start_update_check
 
 _WEB_DIR = Path(__file__).parent / "web"
+_ICON = BIN_DIR / "assets" / "images" / "logo.ico"
 
 
 def _log(msg: str) -> None:
@@ -23,6 +26,7 @@ def _log(msg: str) -> None:
 def run() -> None:
     """Launch the flash-excel desktop window via PyWebView."""
     _log("starting")
+    start_update_check()
     api = FlashExcelAPI()
 
     webview.create_window(
@@ -35,4 +39,4 @@ def run() -> None:
         background_color="#161a20",
     )
 
-    webview.start(debug="--debug" in sys.argv)
+    webview.start(debug="--debug" in sys.argv, icon=str(_ICON))
