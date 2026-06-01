@@ -365,3 +365,35 @@ class FlashExcelAPI:
             "source_file": preset.meta.source_file or "",
             "steps": other_steps,
         }
+
+    @staticmethod
+    def _resolve_output_path(
+        file_path: str,
+        output_config: dict,
+        *,
+        return_fmt: bool = False,
+    ) -> str | tuple[str, str]:
+        """Compute the output file path from source path and output config.
+
+        Args:
+            file_path: Absolute path to the source file.
+            output_config: Dict with keys ``'format'``, ``'folder'``, ``'pattern'``.
+                ``'format'`` can be ``'keep'``, ``'xlsx'``, ``'csv'``, or ``'parquet'``.
+                ``'pattern'`` may contain ``'{name}'`` placeholder (stem of source).
+            return_fmt: If ``True``, return ``(path_str, resolved_fmt)`` tuple.
+
+        Returns:
+            Output path string, or ``(path_str, fmt_str)`` if return_fmt is True.
+        """
+        src = Path(file_path)
+        stem = src.stem
+        fmt = output_config.get("format", "keep")
+        if fmt == "keep":
+            fmt = src.suffix.lstrip(".") or "xlsx"
+        pattern = output_config.get("pattern", "{name}_clean")
+        base_name = pattern.replace("{name}", stem)
+        folder = output_config.get("folder", "./output/")
+        out_path = str(Path(folder) / f"{base_name}.{fmt}")
+        if return_fmt:
+            return out_path, fmt
+        return out_path
