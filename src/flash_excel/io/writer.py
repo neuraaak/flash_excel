@@ -27,11 +27,31 @@ import polars as pl
 # ///////////////////////////////////////////////////////////////
 
 
+_EXCEL_DTYPE_FORMATS: dict = {
+    pl.Date: "DD/MM/YYYY",
+    pl.Datetime: "DD/MM/YYYY HH:MM:SS",
+}
+
+
+def _coerce_booleans(df: pl.DataFrame) -> pl.DataFrame:
+    """Convert Boolean columns to VRAI/FAUX strings (Excel-friendly)."""
+    bool_cols = [name for name, dtype in df.schema.items() if dtype == pl.Boolean]
+    if not bool_cols:
+        return df
+    return df.with_columns(
+        [
+            pl.when(pl.col(c)).then(pl.lit("VRAI")).otherwise(pl.lit("FAUX")).alias(c)
+            for c in bool_cols
+        ]
+    )
+
+
 def write_excel(df: pl.DataFrame, path: Path) -> None:
     """Write a DataFrame to an Excel file (.xlsx).
 
-    Creates any missing parent directories before writing. Overwrites
-    the file if it already exists at ``path``.
+    Boolean columns are converted to VRAI/FAUX. Date and Datetime columns
+    receive locale-appropriate format strings. All other types are written
+    natively via xlsxwriter.
 
     Args:
         df: DataFrame to write.
@@ -48,7 +68,8 @@ def write_excel(df: pl.DataFrame, path: Path) -> None:
         >>> write_excel(df, Path("output/rapport.xlsx"))
     """
     path.parent.mkdir(parents=True, exist_ok=True)
-    df.write_excel(path)
+    df = _coerce_booleans(df)
+    df.write_excel(path, dtype_formats=_EXCEL_DTYPE_FORMATS)
 
 
 def write_csv(

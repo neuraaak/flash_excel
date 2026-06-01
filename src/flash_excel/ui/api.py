@@ -278,6 +278,24 @@ class FlashExcelAPI:
         except Exception as exc:
             return _err(str(exc))
 
+    def open_folder_dialog(self) -> dict:
+        """Open native folder picker and return the selected path."""
+        try:
+            window = webview.active_window()
+            if window is None:
+                return _err("No active window")
+            result = window.create_file_dialog(  # type: ignore[union-attr]
+                FileDialog.FOLDER,
+            )
+            if not result:
+                return _ok({"cancelled": True})
+            folder = (
+                str(result[0]) if isinstance(result, (list, tuple)) else str(result)
+            )
+            return _ok({"folder": folder})
+        except Exception as exc:
+            return _err(str(exc))
+
     def clear_file(self) -> dict:
         """Unload the current file."""
         self._loaded_file = None
@@ -486,44 +504,52 @@ class FlashExcelAPI:
 
     @staticmethod
     def _preset_to_dict(preset: Preset) -> dict:
-        # Aggregate multi-step actions into single payloads with items[].
-        computed_items: list[dict] = []
-        clean_items: list[dict] = []
-        replace_items: list[dict] = []
-        other_steps: list[dict] = []
+        # Aggregate multi-step actions (add_computed_column, clean_text,
+        # replace_values) into single payloads with items[], keeping the
+        # position of the first occurrence of each aggregated action.
+        _AGGREGATE = {"add_computed_column", "clean_text", "replace_values"}
+        aggregated: dict[str, list[dict]] = {a: [] for a in _AGGREGATE}
+        first_pos: dict[str, int] = {}
+        other_steps: list[dict | None] = []
+
         for s in preset.steps:
             d = s.model_dump()
-            if d["action"] == "add_computed_column":
-                computed_items.append(
-                    {"target": d["target"], "expression": d["expression"]}
-                )
-            elif d["action"] == "clean_text":
-                clean_items.append(
-                    {
-                        "columns": d["columns"],
-                        "ops": d.get("ops", []),
-                        "case": d.get("case", "none"),
-                    }
-                )
-            elif d["action"] == "replace_values":
-                replace_items.append({"column": d["column"], "mapping": d["mapping"]})
+            action = d["action"]
+            if action in _AGGREGATE:
+                if action not in first_pos:
+                    first_pos[action] = len(other_steps)
+                    other_steps.append(None)  # placeholder
+                if action == "add_computed_column":
+                    aggregated[action].append(
+                        {"target": d["target"], "expression": d["expression"]}
+                    )
+                elif action == "clean_text":
+                    aggregated[action].append(
+                        {
+                            "columns": d["columns"],
+                            "ops": d.get("ops", []),
+                            "case": d.get("case", "none"),
+                        }
+                    )
+                elif action == "replace_values":
+                    aggregated[action].append(
+                        {"column": d["column"], "mapping": d["mapping"]}
+                    )
             else:
                 other_steps.append(d)
-        if computed_items:
-            other_steps.append(
-                {"action": "add_computed_column", "items": computed_items}
-            )
-        if clean_items:
-            other_steps.append({"action": "clean_text", "items": clean_items})
-        if replace_items:
-            other_steps.append({"action": "replace_values", "items": replace_items})
+
+        # Fill placeholders with aggregated payloads.
+        for action, items in aggregated.items():
+            if items:
+                other_steps[first_pos[action]] = {"action": action, "items": items}
+
         return {
             "name": preset.meta.name,
             "description": preset.meta.description or "",
             "source_columns": preset.meta.source_columns or [],
             "source_types": preset.meta.source_types or {},
             "source_file": preset.meta.source_file or "",
-            "steps": other_steps,
+            "steps": [s for s in other_steps if s is not None],
         }
 
     @staticmethod

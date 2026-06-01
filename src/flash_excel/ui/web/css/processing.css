@@ -149,16 +149,16 @@
 }
 .p-console.collapsed .con-body { display: none; }
 
-.log-line { display: flex; gap: 12px; padding: 0 16px; white-space: pre-wrap; word-break: break-word; }
+.log-line { display: flex; align-items: center; gap: 12px; padding: 0 16px; height: 22px; overflow: hidden; }
 .log-line:hover { background: color-mix(in srgb, var(--text_secondary) 6%, transparent); }
-.log-time { color: var(--text_secondary); opacity: .7; flex: 0 0 auto; }
-.log-lvl  { flex: 0 0 52px; font-weight: 700; }
+.log-time { color: var(--text_secondary); opacity: .7; flex: 0 0 auto; white-space: nowrap; }
+.log-lvl  { flex: 0 0 52px; font-weight: 700; white-space: nowrap; }
 .log-lvl.info { color: var(--semantic_info); }
 .log-lvl.ok   { color: var(--semantic_success); }
 .log-lvl.warn { color: var(--semantic_warning); }
 .log-lvl.err  { color: var(--semantic_error); }
 .log-lvl.step { color: var(--text_secondary); }
-.log-msg { flex: 1 1 auto; color: var(--text_primary); }
+.log-msg { flex: 1 1 auto; color: var(--text_primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 
 /* ============================================================
    RUN PANEL — right sidebar

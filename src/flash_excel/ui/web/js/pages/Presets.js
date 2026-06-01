@@ -2,6 +2,12 @@ import { api }      from '../api.js';
 import FileLoader   from '../components/FileLoader.js';
 import ActionSteps  from '../components/ActionSteps.js';
 
+const ACTION_ORDER = [
+  'rename_columns', 'select_columns', 'cast_types', 'replace_values',
+  'clean_text', 'add_computed_column', 'filter_rows', 'deduplicate_rows',
+  'sort_rows', 'reorder_columns',
+];
+
 /**
  * Supprime des payloads toute référence aux colonnes disparues.
  * Retourne un nouvel objet payloads nettoyé.
@@ -118,7 +124,7 @@ export default {
     async savePreset() {
       if (!this.presetName.trim()) { this.showToast('Preset name cannot be empty', 'error'); return; }
       try {
-        const steps = Object.values(this.payloads).filter(p => p && Object.keys(p).length > 1);
+        const steps = ACTION_ORDER.map(a => this.payloads[a]).filter(p => p && Object.keys(p).length > 1);
         const res = await api.savePreset(this.presetName, steps);
         this.selectedPath = res.path; this.isNew = false;
         await this.loadList();

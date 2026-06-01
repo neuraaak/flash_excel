@@ -4,20 +4,38 @@ import LucideIcon    from './LucideIcon.js';
 export default {
   name: 'AppShell',
   components: { SettingsModal, LucideIcon },
-  props: { currentPage: { type: String, default: 'presets' } },
+  props: { currentPage: { type: String, default: 'processing' } },
   emits: ['navigate'],
 
   data() {
     return {
       showSettings:    false,
-      sidebarExpanded: localStorage.getItem('fx_sidebar') === '1',
+      sidebarExpanded: false,
+      _windowWide:     false,
     };
+  },
+
+  mounted() {
+    const BREAKPOINT = 860;
+    const update = () => {
+      const wide = window.innerWidth >= BREAKPOINT;
+      if (wide !== this._windowWide) {
+        this._windowWide = wide;
+        this.sidebarExpanded = wide;
+      }
+    };
+    this._ro = new ResizeObserver(update);
+    this._ro.observe(document.documentElement);
+    update();
+  },
+
+  beforeUnmount() {
+    this._ro?.disconnect();
   },
 
   methods: {
     toggleSidebar() {
       this.sidebarExpanded = !this.sidebarExpanded;
-      localStorage.setItem('fx_sidebar', this.sidebarExpanded ? '1' : '0');
     },
   },
 
@@ -40,6 +58,17 @@ export default {
 
           <div class="nav-sep"></div>
 
+          <!-- Processing -->
+          <button class="nav-btn" :class="{ active: currentPage === 'processing' }"
+            title="Processing" @click="$emit('navigate', 'processing')">
+            <span class="nav-ico">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M13 2L4.5 13H11l-1 9 8.5-11.5H12z"/>
+              </svg>
+            </span>
+            <span class="nav-label">Processing</span>
+          </button>
+
           <!-- Presets -->
           <button class="nav-btn" :class="{ active: currentPage === 'presets' }"
             title="Presets" @click="$emit('navigate', 'presets')">
@@ -51,17 +80,6 @@ export default {
               </svg>
             </span>
             <span class="nav-label">Presets</span>
-          </button>
-
-          <!-- Processing -->
-          <button class="nav-btn" :class="{ active: currentPage === 'processing' }"
-            title="Processing" @click="$emit('navigate', 'processing')">
-            <span class="nav-ico">
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M13 2L4.5 13H11l-1 9 8.5-11.5H12z"/>
-              </svg>
-            </span>
-            <span class="nav-label">Processing</span>
           </button>
 
           <div class="nav-spacer"></div>

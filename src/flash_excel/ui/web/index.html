@@ -91,7 +91,7 @@
       name: 'App',
       components: { AppShell, PresetsPage, ProcessingPage },
       data() {
-        return { currentPage: 'presets', toasts: [] };
+        return { currentPage: 'processing', toasts: [] };
       },
       methods: {
         navigate(page) { this.currentPage = page; },
@@ -106,8 +106,8 @@
       },
       template: `
         <AppShell :currentPage="currentPage" @navigate="navigate">
-          <PresetsPage v-if="currentPage === 'presets'" />
-          <ProcessingPage v-else />
+          <PresetsPage v-show="currentPage === 'presets'" />
+          <ProcessingPage v-show="currentPage === 'processing'" />
         </AppShell>
         <div class="toast-container">
           <div v-for="t in toasts" :key="t.id" class="toast" :class="'toast--' + t.type">{{ t.message }}</div>

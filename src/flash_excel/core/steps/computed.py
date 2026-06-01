@@ -6,25 +6,276 @@
 """
 Pure step function: add_computed_column.
 
-Adds a new column to the DataFrame using an expression evaluated
-in a restricted Polars namespace.
+Adds a new column to the DataFrame using an Excel-style expression
+evaluated in a restricted namespace of named functions.
 """
 
 from __future__ import annotations
 
-# ///////////////////////////////////////////////////////////////
-# IMPORTS
-# ///////////////////////////////////////////////////////////////
-# Third-party imports
 import ast
+import datetime
 
 import polars as pl
 
-# Local imports
 from flash_excel.core.registry import action
 
 # ///////////////////////////////////////////////////////////////
-# FUNCTIONS
+# EXCEL-STYLE FUNCTION CATALOG
+# ///////////////////////////////////////////////////////////////
+
+
+def _make_namespace(df: pl.DataFrame) -> dict:
+    """Build the restricted eval namespace with Excel-style functions + column refs."""
+
+    # Uppercase names are intentional: they match Excel function conventions  # noqa: N802
+    def CONCATENER(*parts: pl.Expr | str, sep: str = "") -> pl.Expr:  # noqa: N802
+        coerced = [pl.lit(p) if isinstance(p, str) else p for p in parts]
+        return pl.concat_str(coerced, separator=sep)
+
+    def MAJUSCULE(col: pl.Expr) -> pl.Expr:
+        return col.str.to_uppercase()  # noqa: N802
+
+    def MINUSCULE(col: pl.Expr) -> pl.Expr:
+        return col.str.to_lowercase()  # noqa: N802
+
+    def GAUCHE(col: pl.Expr, n: int) -> pl.Expr:
+        return col.str.slice(0, n)  # noqa: N802
+
+    def DROITE(col: pl.Expr, n: int) -> pl.Expr:
+        return col.str.slice(-n)  # noqa: N802
+
+    def NBCAR(col: pl.Expr) -> pl.Expr:
+        return col.str.len_chars()  # noqa: N802
+
+    def SUPPRESPACE(col: pl.Expr) -> pl.Expr:
+        return col.str.strip_chars()  # noqa: N802
+
+    def ARRONDI(col: pl.Expr, n: int = 0) -> pl.Expr:
+        return col.round(n)  # noqa: N802
+
+    def ABS(col: pl.Expr) -> pl.Expr:
+        return col.abs()  # noqa: N802
+
+    def MULTIPLIER(col: pl.Expr, n: float) -> pl.Expr:
+        return col * n  # noqa: N802
+
+    def AJOUTER(col1: pl.Expr, col2: pl.Expr) -> pl.Expr:
+        return col1 + col2  # noqa: N802
+
+    def ANNEE(col: pl.Expr) -> pl.Expr:
+        return col.dt.year()  # noqa: N802
+
+    def MOIS(col: pl.Expr) -> pl.Expr:
+        return col.dt.month()  # noqa: N802
+
+    def JOUR(col: pl.Expr) -> pl.Expr:
+        return col.dt.day()  # noqa: N802
+
+    def AUJOURD_HUI() -> pl.Expr:
+        return pl.lit(datetime.date.today())  # noqa: N802
+
+    def SI(
+        cond: pl.Expr,
+        alors: pl.Expr | str | int | float,  # noqa: N802
+        sinon: pl.Expr | str | int | float,
+    ) -> pl.Expr:
+        alors_ = pl.lit(alors) if not isinstance(alors, pl.Expr) else alors
+        sinon_ = pl.lit(sinon) if not isinstance(sinon, pl.Expr) else sinon
+        return pl.when(cond).then(alors_).otherwise(sinon_)
+
+    namespace: dict = {
+        # Functions
+        "CONCATENER": CONCATENER,
+        "MAJUSCULE": MAJUSCULE,
+        "MINUSCULE": MINUSCULE,
+        "GAUCHE": GAUCHE,
+        "DROITE": DROITE,
+        "NBCAR": NBCAR,
+        "SUPPRESPACE": SUPPRESPACE,
+        "ARRONDI": ARRONDI,
+        "ABS": ABS,
+        "MULTIPLIER": MULTIPLIER,
+        "AJOUTER": AJOUTER,
+        "ANNEE": ANNEE,
+        "MOIS": MOIS,
+        "JOUR": JOUR,
+        "AUJOURD_HUI": AUJOURD_HUI,
+        "SI": SI,
+        # Column helper
+        "col": pl.col,
+    }
+
+    # Direct column references: prenom → pl.col("prenom")
+    for col_name in df.columns:
+        namespace.setdefault(col_name, pl.col(col_name))
+
+    return namespace
+
+
+# Allowed identifier names (updated at eval time from namespace keys)
+_STATIC_ALLOWED = {
+    "CONCATENER",
+    "MAJUSCULE",
+    "MINUSCULE",
+    "GAUCHE",
+    "DROITE",
+    "NBCAR",
+    "SUPPRESPACE",
+    "ARRONDI",
+    "ABS",
+    "MULTIPLIER",
+    "AJOUTER",
+    "ANNEE",
+    "MOIS",
+    "JOUR",
+    "AUJOURD_HUI",
+    "SI",
+    "col",
+}
+
+# Public catalog for the JS layer (same order as UI display)
+FUNCTION_CATALOG: list[dict] = [
+    {
+        "name": "CONCATENER",
+        "label": "CONCATENER",
+        "cat": "Texte",
+        "hint": "CONCATENER(col1, col2, …)",
+    },
+    {
+        "name": "MAJUSCULE",
+        "label": "MAJUSCULE",
+        "cat": "Texte",
+        "hint": "MAJUSCULE(col)",
+    },
+    {
+        "name": "MINUSCULE",
+        "label": "MINUSCULE",
+        "cat": "Texte",
+        "hint": "MINUSCULE(col)",
+    },
+    {"name": "GAUCHE", "label": "GAUCHE", "cat": "Texte", "hint": "GAUCHE(col, n)"},
+    {"name": "DROITE", "label": "DROITE", "cat": "Texte", "hint": "DROITE(col, n)"},
+    {"name": "NBCAR", "label": "NBCAR", "cat": "Texte", "hint": "NBCAR(col)"},
+    {
+        "name": "SUPPRESPACE",
+        "label": "SUPPRESPACE",
+        "cat": "Texte",
+        "hint": "SUPPRESPACE(col)",
+    },
+    {"name": "ARRONDI", "label": "ARRONDI", "cat": "Math", "hint": "ARRONDI(col, n)"},
+    {"name": "ABS", "label": "ABS", "cat": "Math", "hint": "ABS(col)"},
+    {
+        "name": "MULTIPLIER",
+        "label": "MULTIPLIER",
+        "cat": "Math",
+        "hint": "MULTIPLIER(col, n)",
+    },
+    {
+        "name": "AJOUTER",
+        "label": "AJOUTER",
+        "cat": "Math",
+        "hint": "AJOUTER(col1, col2)",
+    },
+    {"name": "ANNEE", "label": "ANNEE", "cat": "Date", "hint": "ANNEE(col)"},
+    {"name": "MOIS", "label": "MOIS", "cat": "Date", "hint": "MOIS(col)"},
+    {"name": "JOUR", "label": "JOUR", "cat": "Date", "hint": "JOUR(col)"},
+    {
+        "name": "AUJOURD_HUI",
+        "label": "AUJOURD'HUI",
+        "cat": "Date",
+        "hint": "AUJOURD_HUI()",
+    },
+    {"name": "SI", "label": "SI", "cat": "Logique", "hint": "SI(cond, alors, sinon)"},
+]
+
+
+# ///////////////////////////////////////////////////////////////
+# AST VALIDATOR
+# ///////////////////////////////////////////////////////////////
+
+
+class _SafeVisitor(ast.NodeVisitor):
+    _ALLOWED_NODES = (
+        ast.Expression,
+        ast.BinOp,
+        ast.UnaryOp,
+        ast.BoolOp,
+        ast.Compare,
+        ast.Call,
+        ast.Name,
+        ast.Constant,
+        ast.Attribute,
+        ast.Subscript,
+        ast.List,
+        ast.Tuple,
+        ast.Dict,
+        ast.Set,
+        ast.Load,
+        ast.keyword,
+        ast.IfExp,
+        ast.Add,
+        ast.Sub,
+        ast.Mult,
+        ast.Div,
+        ast.FloorDiv,
+        ast.Mod,
+        ast.Pow,
+        ast.MatMult,
+        ast.UAdd,
+        ast.USub,
+        ast.Invert,
+        ast.Not,
+        ast.And,
+        ast.Or,
+        ast.Eq,
+        ast.NotEq,
+        ast.Lt,
+        ast.LtE,
+        ast.Gt,
+        ast.GtE,
+        ast.Is,
+        ast.IsNot,
+        ast.In,
+        ast.NotIn,
+        ast.BitOr,
+        ast.BitAnd,
+        ast.BitXor,
+        ast.LShift,
+        ast.RShift,
+    )
+
+    def __init__(self, allowed: set[str]) -> None:
+        self.allowed = allowed
+
+    def visit(self, node: ast.AST) -> None:  # type: ignore[override]
+        if not isinstance(node, self._ALLOWED_NODES):
+            raise ValueError(
+                f"Disallowed expression element: {node.__class__.__name__}"
+            )
+        super().visit(node)
+
+    def visit_Name(self, node: ast.Name) -> None:  # type: ignore[override]
+        if node.id not in self.allowed:
+            raise NameError(
+                f"'{node.id}' is not available. Use column names or catalog functions."
+            )
+
+    def visit_Attribute(self, node: ast.Attribute) -> None:  # type: ignore[override]
+        if node.attr.startswith("_"):
+            raise ValueError(f"Access to '{node.attr}' is forbidden")
+        self.visit(node.value)
+
+    def visit_Call(self, node: ast.Call) -> None:  # type: ignore[override]
+        if not isinstance(node.func, (ast.Name, ast.Attribute)):
+            raise ValueError("Only named function calls are allowed")
+        for kw in node.keywords:
+            if kw.arg and kw.arg.startswith("_"):
+                raise ValueError(f"Keyword '{kw.arg}' is forbidden")
+        self.generic_visit(node)
+
+
+# ///////////////////////////////////////////////////////////////
+# STEP FUNCTION
 # ///////////////////////////////////////////////////////////////
 
 
@@ -34,148 +285,45 @@ def add_computed_column(
     target: str,
     expression: str,
 ) -> pl.DataFrame:
-    """Add a computed column to the DataFrame.
+    """Add a computed column using an Excel-style expression.
 
-    Evaluates a Polars expression string in a restricted namespace
-    containing ``pl``, ``col``, and ``lit``, plus all column names
-    as direct references to ``pl.col(name)``.
-
-    The expression is evaluated and aliased to the target column name.
-
-    This is a pure function: no side effects, no I/O.
-
-    Args:
-        df: Input DataFrame.
-        target: Name for the new computed column.
-        expression: A Polars expression string (e.g.,
-            ``"col('first') + col('second')"`` or
-            ``"col('salary') * 1.1"``).
-
-    Returns:
-        pl.DataFrame: New DataFrame with the computed column added.
-
-    Raises:
-        SyntaxError: If the expression string is not valid Python.
-        NameError: If the expression references undefined names
-            (only ``pl``, ``col``, ``lit``, and column names are available).
-        TypeError: If the expression evaluates to a non-Expression object.
-        polars.exceptions.ColumnNotFoundError: If a referenced column
-            does not exist in ``df``.
+    Available functions: CONCATENER, MAJUSCULE, MINUSCULE, GAUCHE, DROITE,
+    NBCAR, SUPPRESPACE, ARRONDI, ABS, MULTIPLIER, AJOUTER, ANNEE, MOIS,
+    JOUR, AUJOURD_HUI, SI. Column names are accessible directly by name.
 
     Example:
-        >>> import polars as pl
-        >>> df = pl.DataFrame({"first": ["Alice"], "last": ["Smith"]})
-        >>> add_computed_column(
-        ...     df,
-        ...     target="full_name",
-        ...     expression="pl.concat_str([col('first'), col('last')], separator=' ')"
-        ... )
+        >>> df = pl.DataFrame({"prenom": ["Alice"], "nom": ["Smith"]})
+        >>> add_computed_column(df, "complet", 'MAJUSCULE(CONCATENER(prenom, " ", nom))')
         shape: (1, 3)
     """
-    # Prepare a safe namespace for expression evaluation.  We expose only
-    # the Polars helpers and a mapping of column names -> pl.col(name).
-    namespace: dict = {
-        "pl": pl,
-        "col": pl.col,
-        "lit": pl.lit,
-    }
-
-    # Add column references so users can write col('name') or just 'name'.
-    for col_name in df.columns:
-        namespace[col_name] = pl.col(col_name)
-
-    # Validate the expression AST to prevent dangerous constructs and
-    # restrict the set of allowed identifiers and attribute names.
-    allowed_names: set[str] = set(namespace.keys())
-
-    class _SafeExprVisitor(ast.NodeVisitor):
-        """AST visitor that rejects unsafe nodes and identifiers."""
-
-        _ALLOWED_NODE_TYPES = (
-            ast.Expression,
-            ast.BinOp,
-            ast.UnaryOp,
-            ast.BoolOp,
-            ast.Compare,
-            ast.Call,
-            ast.Name,
-            ast.Constant,
-            ast.Attribute,
-            ast.Subscript,
-            ast.List,
-            ast.Tuple,
-            ast.Dict,
-            ast.Set,
-            ast.Load,
-            ast.keyword,
-            ast.IfExp,
-        )
-
-        def __init__(self, allowed: set[str]) -> None:
-            self.allowed = allowed
-
-        def visit(self, node: ast.AST) -> None:  # type: ignore[override]
-            if not isinstance(node, self._ALLOWED_NODE_TYPES):
-                raise ValueError(
-                    f"Disallowed expression element: {node.__class__.__name__}"
-                )
-            super().visit(node)
-
-        def visit_Name(self, node: ast.Name) -> None:  # type: ignore[override]
-            if node.id not in self.allowed:
-                raise NameError(
-                    f"Use of name '{node.id}' is not allowed in expressions"
-                )
-
-        def visit_Attribute(self, node: ast.Attribute) -> None:  # type: ignore[override]
-            # Disallow access to private/dunder attributes (eg. __class__)
-            if node.attr.startswith("_"):
-                raise ValueError(f"Access to attribute '{node.attr}' is forbidden")
-            # Recursively validate the value (base) of the attribute.
-            self.visit(node.value)
-
-        def visit_Call(self, node: ast.Call) -> None:  # type: ignore[override]
-            # Only allow calls where the callee is a Name or an Attribute
-            if not isinstance(node.func, (ast.Name, ast.Attribute)):
-                raise ValueError("Calls to lambda/complex expressions are not allowed")
-            # Keyword names must not be private/dunder
-            for kw in node.keywords:
-                if kw.arg and kw.arg.startswith("_"):
-                    raise ValueError(f"Keyword '{kw.arg}' is forbidden in expressions")
-            # Continue validation for nested nodes
-            self.generic_visit(node)
+    namespace = _make_namespace(df)
+    allowed_names = _STATIC_ALLOWED | set(df.columns)
 
     try:
         parsed = ast.parse(expression, mode="eval")
     except SyntaxError as exc:
-        raise ValueError(f"Invalid expression syntax: {exc}") from exc
+        raise ValueError(f"Syntaxe invalide : {exc}") from exc
 
     try:
-        _SafeExprVisitor(allowed_names).visit(parsed)
+        _SafeVisitor(allowed_names).visit(parsed)
     except Exception as exc:
-        raise ValueError(f"Unsafe or unsupported expression: {exc}") from exc
+        raise ValueError(f"Expression non autorisée : {exc}") from exc
 
-    # Compile and evaluate the validated AST in the restricted namespace.
     try:
-        code_obj = compile(parsed, "<add_computed_column>", "eval")
+        code_obj = compile(parsed, "<computed>", "eval")
+        # eval() is safe here: the AST is fully validated by _SafeVisitor before
+        # reaching this point (whitelist of node types + allowed names), builtins
+        # are stripped, and the namespace contains only Polars wrappers + column refs.
         expr = eval(code_obj, {"__builtins__": {}}, namespace)  # noqa: S307
     except Exception as exc:
-        raise ValueError(
-            f"Failed to evaluate add_computed_column expression: {exc}"
-        ) from exc
+        raise ValueError(f"Erreur d'évaluation : {exc}") from exc
 
-    # Ensure the result is a Polars expression.
     if not isinstance(expr, pl.Expr):
         raise TypeError(
-            f"Expression must evaluate to a Polars Expr, got {type(expr).__name__}"
+            f"L'expression doit retourner une Expr Polars, obtenu : {type(expr).__name__}"
         )
 
-    # Add the computed column with the target alias.
     return df.with_columns(expr.alias(target))
 
 
-# ///////////////////////////////////////////////////////////////
-# PUBLIC API
-# ///////////////////////////////////////////////////////////////
-
-__all__ = ["add_computed_column"]
+__all__ = ["add_computed_column", "FUNCTION_CATALOG"]

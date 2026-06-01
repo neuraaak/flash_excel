@@ -1,12 +1,6 @@
 import { api } from '../api.js';
 
 const LEVEL_LABEL = { info: 'INFO', ok: 'OK', step: '··', warn: 'WARN', err: 'ERROR' };
-const STATUS_LABEL = { pending: 'Pending', running: 'Running', done: 'Done', error: 'Error', skipped: 'Skipped' };
-const ERROR_OPTS = [
-  { value: 'skip',   label: 'Skip file',  sub: 'continue queue' },
-  { value: 'stop',   label: 'Stop all',   sub: 'halt on first error' },
-  { value: 'ignore', label: 'Ignore',     sub: 'write partial' },
-];
 
 export default {
   name: 'ProcessingPage',
@@ -14,6 +8,7 @@ export default {
 
   data() {
     return {
+      LEVEL_LABEL,
       presets:            [],
       selectedPresetPath: '',
       selectedPreset:     null,   // full preset dict from api.loadPreset
@@ -36,6 +31,24 @@ export default {
   },
 
   computed: {
+    STATUS_LABEL() {
+      const t = this.i18n.t.bind(this.i18n);
+      return {
+        pending: t('proc.status_pending'),
+        running: t('proc.status_running'),
+        done:    t('proc.status_done'),
+        error:   t('proc.status_error'),
+        skipped: t('proc.status_skipped'),
+      };
+    },
+    ERROR_OPTS() {
+      const t = this.i18n.t.bind(this.i18n);
+      return [
+        { value: 'skip',   label: t('proc.err_skip'),   sub: t('proc.err_skip_sub') },
+        { value: 'stop',   label: t('proc.err_stop'),   sub: t('proc.err_stop_sub') },
+        { value: 'ignore', label: t('proc.err_ignore'), sub: t('proc.err_ignore_sub') },
+      ];
+    },
     totalSteps() { return this.selectedPreset?.steps?.length ?? 0; },
     stepNames()  { return this.selectedPreset?.steps?.map(s => s.action) ?? []; },
     canRun()     { return !!this.fileInfo && !!this.selectedPresetPath && this.runState !== 'running'; },
@@ -58,6 +71,15 @@ export default {
   },
 
   methods: {
+    async browseFolder() {
+      try {
+        const res = await api.openFolderDialog();
+        if (!res.cancelled) this.outputConfig.folder = res.folder;
+      } catch (e) {
+        this.showToast(e.message, 'error');
+      }
+    },
+
     async loadPresets() {
       try {
         this.presets = await api.getPresets();
@@ -115,7 +137,7 @@ export default {
       if (type === 'step') {
         const idx = data.step_index + 1;
         this.fileProgress = this.totalSteps > 0 ? Math.round(idx / this.totalSteps * 100) : 0;
-        this.pushLog('step', `${data.step_name} ✓  (${data.rows_in} → ${data.rows_out} rows)`);
+        this.pushLog('step', `${data.step_name} ✓ (${data.rows_in} → ${data.rows_out} rows)`);
       } else if (type === 'done') {
         this.runState     = 'done';
         this.fileStatus   = 'done';
@@ -177,17 +199,17 @@ export default {
     <!-- Files area -->
     <div class="files-area">
       <div class="area-head">
-        <h2>Input file</h2>
-        <span class="ah-meta">{{ fileInfo ? '1 file' : '0 files' }}</span>
+        <h2>{{ i18n.t('proc.input_file') }}</h2>
+        <span class="ah-meta">{{ fileInfo ? i18n.t('proc.one_file') : i18n.t('proc.no_files') }}</span>
         <span style="flex:1 1 auto"></span>
         <button class="link-btn" @click="openFile" :disabled="runState === 'running'">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-          Load file
+          {{ i18n.t('proc.load_file') }}
         </button>
         <button v-if="fileInfo" class="link-btn danger"
           @click="fileInfo = null; resetRun()" :disabled="runState === 'running'">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M8 6V4a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v2M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>
-          Clear
+          {{ i18n.t('file.clear') }}
         </button>
       </div>
 
@@ -199,8 +221,8 @@ export default {
             <path d="M20 16.5A4.5 4.5 0 0 0 18 8h-1.26A7 7 0 1 0 4 14.9"/>
           </svg>
         </span>
-        <span>Drop one Excel/CSV file here
-          <span style="color:var(--text_secondary);font-weight:400">— or click to browse</span>
+        <span>{{ i18n.t('proc.dropzone') }}
+          <span style="color:var(--text_secondary);font-weight:400">{{ i18n.t('proc.dropzone_or') }}</span>
         </span>
       </div>
 
@@ -216,7 +238,7 @@ export default {
               <span class="file-name">{{ fileInfo.file_name }}</span>
               <span class="file-size">{{ fileSizeLabel(fileInfo.size_bytes) }}</span>
             </div>
-            <div class="file-sub">{{ fileInfo.columns?.length ?? 0 }} columns</div>
+            <div class="file-sub">{{ fileInfo.columns?.length ?? 0 }} {{ i18n.t('proc.columns') }}</div>
             <div class="file-prog"><i :style="{ width: fileProgress + '%' }"></i></div>
           </div>
           <div class="file-right">
@@ -229,8 +251,8 @@ export default {
 
       <!-- Empty state (shown below drop zone when no file) -->
       <div v-if="!fileInfo" class="empty-state" style="margin-top:14px">
-        <span class="es-title">No file loaded</span>
-        <span class="es-sub">Load one file to process it with the active preset.</span>
+        <span class="es-title">{{ i18n.t('proc.no_file') }}</span>
+        <span class="es-sub">{{ i18n.t('proc.no_file_sub') }}</span>
       </div>
     </div>
 
@@ -242,7 +264,7 @@ export default {
         </span>
         <span class="con-title">
           <span class="con-live" :class="{ on: runState === 'running' }"></span>
-          Console
+          {{ i18n.t('proc.console') }}
         </span>
         <div class="con-filters" @click.stop>
           <span v-for="f in ['all','info','warn','err']" :key="f"
@@ -280,12 +302,12 @@ export default {
 
       <!-- Preset selector -->
       <div class="rp-block">
-        <span class="rp-label">Preset</span>
+        <span class="rp-label">{{ i18n.t('proc.preset') }}</span>
         <div style="position:relative">
           <select
             style="appearance:none;-webkit-appearance:none;width:100%;height:34px;background:var(--surface_sunken);border:2px solid var(--border_subtle);border-radius:5px;color:var(--text_primary);font-family:inherit;font-size:13px;padding:0 30px 0 11px;cursor:pointer;outline:none;transition:border-color .12s"
             v-model="selectedPresetPath" @change="onPresetChange">
-            <option value="" disabled>Select a preset…</option>
+            <option value="" disabled>{{ i18n.t('proc.preset_ph') }}</option>
             <option v-for="p in presets" :key="p.path" :value="p.path">
               {{ p.name }} — {{ p.step_count }} actions
             </option>
@@ -295,7 +317,7 @@ export default {
         <div v-if="selectedPreset" class="preset-box">
           <div class="pb-top">
             <span class="pb-name">{{ selectedPreset.name }}</span>
-            <span class="pb-count">{{ totalSteps }} actions</span>
+            <span class="pb-count">{{ totalSteps }} {{ i18n.t('proc.actions') }}</span>
           </div>
           <div class="pb-ops">
             <span v-for="s in stepNames" :key="s" class="op-tag">{{ s }}</span>
@@ -305,14 +327,14 @@ export default {
 
       <!-- Output config -->
       <div class="rp-block">
-        <span class="rp-label">Output</span>
+        <span class="rp-label">{{ i18n.t('proc.output') }}</span>
         <div class="field">
-          <span class="field-label">Format</span>
+          <span class="field-label">{{ i18n.t('proc.format') }}</span>
           <div style="position:relative">
             <select
               style="appearance:none;-webkit-appearance:none;width:100%;height:34px;background:var(--surface_sunken);border:2px solid var(--border_subtle);border-radius:5px;color:var(--text_primary);font-family:inherit;font-size:13px;padding:0 30px 0 11px;cursor:pointer;outline:none;"
               v-model="outputConfig.format">
-              <option value="keep">Same as source</option>
+              <option value="keep">{{ i18n.t('proc.fmt_keep') }}</option>
               <option value="xlsx">.xlsx (Excel)</option>
               <option value="csv">.csv (UTF-8)</option>
               <option value="parquet">.parquet</option>
@@ -321,23 +343,23 @@ export default {
           </div>
         </div>
         <div class="field">
-          <span class="field-label">Destination folder</span>
+          <span class="field-label">{{ i18n.t('proc.dest_folder') }}</span>
           <div style="display:flex;gap:8px">
             <input class="input" style="flex:1 1 auto" v-model="outputConfig.folder" />
-            <button class="icon-btn" title="Browse (not yet implemented)">
+            <button class="icon-btn" title="Browse folder" @click="browseFolder">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/></svg>
             </button>
           </div>
         </div>
         <div class="field">
-          <span class="field-label">Naming pattern</span>
+          <span class="field-label">{{ i18n.t('proc.naming_pattern') }}</span>
           <input class="input" v-model="outputConfig.pattern" />
         </div>
       </div>
 
       <!-- On error -->
       <div class="rp-block">
-        <span class="rp-label">On error</span>
+        <span class="rp-label">{{ i18n.t('proc.on_error') }}</span>
         <div class="radio-col">
           <div v-for="opt in ERROR_OPTS" :key="opt.value"
             class="radio-row" :class="{ on: outputConfig.error_mode === opt.value }"
@@ -355,7 +377,7 @@ export default {
     <div class="rp-foot">
       <div class="ov-prog">
         <div class="ov-top">
-          <span class="ov-label">Progress</span>
+          <span class="ov-label">{{ i18n.t('proc.progress') }}</span>
           <span class="ov-pct">{{ fileProgress }}%</span>
         </div>
         <div class="ov-bar"><i :style="{ width: fileProgress + '%' }"></i></div>
@@ -363,25 +385,25 @@ export default {
       <div class="stat-grid">
         <div class="stat ok">
           <div class="sv">{{ stats.rows_out.toLocaleString('en-US') }}</div>
-          <div class="sl">Rows out</div>
+          <div class="sl">{{ i18n.t('proc.stat_rows') }}</div>
         </div>
         <div class="stat" :class="stats.errors > 0 ? 'err' : ''">
           <div class="sv">{{ stats.errors }}</div>
-          <div class="sl">Errors</div>
+          <div class="sl">{{ i18n.t('proc.stat_errors') }}</div>
         </div>
         <div class="stat" :class="stats.warnings > 0 ? 'warn' : ''">
           <div class="sv">{{ stats.warnings }}</div>
-          <div class="sl">Warnings</div>
+          <div class="sl">{{ i18n.t('proc.stat_warnings') }}</div>
         </div>
         <div class="stat">
           <div class="sv">{{ stats.elapsed_s != null ? stats.elapsed_s + 's' : '—' }}</div>
-          <div class="sl">Elapsed</div>
+          <div class="sl">{{ i18n.t('proc.stat_elapsed') }}</div>
         </div>
       </div>
       <div class="run-actions">
         <button class="btn primary run-main" @click="runPreset" :disabled="!canRun">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>
-          Run preset
+          {{ i18n.t('proc.run') }}
         </button>
         <button class="btn danger-hover run-main" @click="stopRun"
           :disabled="runState !== 'running'" style="flex:0 0 auto">

@@ -10,7 +10,7 @@
 appearance:
   # Palette de couleurs active.
   # Valeurs disponibles : blue-gray | github-dark | warm-dark
-  palette: github-dark
+  palette: blue-gray
 
   # Mode d'affichage.
   # Valeurs disponibles : dark | light

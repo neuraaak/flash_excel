@@ -136,6 +136,8 @@ def filter_rows(
     schema = df.schema
     coerced = []
     for cond in conditions:
+        if isinstance(cond, dict):
+            cond = FilterCondition(**cond)
         if cond.column in schema and isinstance(cond.value, str):
             cond = FilterCondition(
                 column=cond.column,

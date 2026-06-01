@@ -7,6 +7,8 @@ const OPS = [
   { value: 'endswith', label: 'ends with' },
 ];
 
+import { toRaw } from '../../vendor/vue.esm-browser.prod.js';
+
 export default {
   name: 'FilterTable',
   props: { columns: { type: Array, default: () => [] }, payload: { type: Object, default: () => ({}) } },
@@ -20,7 +22,7 @@ export default {
     payload: { immediate: true, handler(v) {
       if (this._emitting) return;
       this.combine = v.combine || 'AND';
-      this.conditions = (v.conditions?.length) ? structuredClone(v.conditions) : [];
+      this.conditions = (v.conditions?.length) ? structuredClone(toRaw(v.conditions)) : [];
     }},
   },
   methods: {
