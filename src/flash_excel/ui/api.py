@@ -11,6 +11,9 @@ Return convention: always return a dict with:
 
 from __future__ import annotations
 
+import json
+import threading
+import time
 from pathlib import Path
 from typing import Any
 
@@ -44,8 +47,11 @@ class FlashExcelAPI:
         self._source_columns: list[str] = []
         self._source_schema: dict[str, str] = {}
         self._source_file: str = ""
+        self._source_file_path: str = ""
         self._current_preset_path: Path | None = None
         self._step_payloads: dict[str, dict] = {}
+        self._run_thread: threading.Thread | None = None
+        self._stop_event: threading.Event = threading.Event()
 
     # ------------------------------------------------------------------
     # Debug bridge (JS → Python)
@@ -312,8 +318,10 @@ class FlashExcelAPI:
             self._source_schema = read_schema(path)
             self._source_columns = list(self._source_schema.keys())
             self._source_file = result.file_name
+            self._source_file_path = str(path)
             return _ok(
                 {
+                    "path": str(path),
                     "file_name": result.file_name,
                     "size_bytes": result.size_bytes,
                     "file_type": result.file_type,
@@ -323,6 +331,158 @@ class FlashExcelAPI:
             )
         except Exception as exc:
             return _err(str(exc))
+
+    # ------------------------------------------------------------------
+    # Run execution
+    # ------------------------------------------------------------------
+
+    def run_preset(
+        self,
+        preset_path: str,
+        file_path: str,
+        output_config: dict,
+    ) -> dict:
+        """Start pipeline execution in a background thread.
+
+        Returns immediately. Progress is pushed via window.flashEvent().
+        """
+        if self._run_thread is not None and self._run_thread.is_alive():
+            return _err("A run is already in progress")
+        self._stop_event = threading.Event()
+        self._run_thread = threading.Thread(
+            target=self._run_worker,
+            args=(preset_path, file_path, output_config),
+            daemon=True,
+        )
+        self._run_thread.start()
+        return _ok()
+
+    def stop_run(self) -> dict:
+        """Request the running pipeline to stop after the current step."""
+        self._stop_event.set()
+        return _ok()
+
+    def _push(self, event_type: str, data: dict) -> None:
+        """Push an event to the JS layer via evaluate_js."""
+        js = f"window.flashEvent && window.flashEvent({json.dumps(event_type)}, {json.dumps(data)})"
+        try:
+            webview.windows[0].evaluate_js(js)
+        except Exception as exc:
+            print(f"[flash-excel] _push failed: {exc}")
+
+    def _run_worker(
+        self,
+        preset_path: str,
+        file_path: str,
+        output_config: dict,
+    ) -> None:
+        """Pipeline execution worker — runs in a background thread."""
+        from flash_excel.core.registry import REGISTRY
+        from flash_excel.io.loader import read_csv, read_excel
+        from flash_excel.io.writer import write_dataframe
+        from flash_excel.presets import load_preset as _load_preset
+
+        t_start = time.monotonic()
+        error_mode = output_config.get("error_mode", "skip")
+
+        try:
+            src = Path(file_path)
+            self._push("log", {"level": "info", "message": f"Loading {src.name}…"})
+            df = read_csv(src) if src.suffix.lower() == ".csv" else read_excel(src)
+            self._push(
+                "log",
+                {
+                    "level": "info",
+                    "message": f"Parsed {len(df)} rows × {len(df.columns)} columns",
+                },
+            )
+
+            preset = _load_preset(Path(preset_path))
+            steps = preset.steps
+            total = len(steps)
+            self._push(
+                "log",
+                {
+                    "level": "info",
+                    "message": f"Preset '{preset.meta.name}' — {total} step(s)",
+                },
+            )
+
+            for idx, step in enumerate(steps):
+                if self._stop_event.is_set():
+                    self._push(
+                        "log", {"level": "warn", "message": "Run stopped by user."}
+                    )
+                    return
+
+                step_name = step.action
+                rows_in = len(df)
+                try:
+                    handler = REGISTRY.get(step_name)
+                    if handler is None:
+                        raise KeyError(f"No handler for action '{step_name}'")
+                    kwargs = step.model_dump(exclude={"action"})
+                    df = handler(df, **kwargs)
+                    rows_out = len(df)
+                    self._push(
+                        "step",
+                        {
+                            "step_index": idx,
+                            "step_name": step_name,
+                            "rows_in": rows_in,
+                            "rows_out": rows_out,
+                        },
+                    )
+                except Exception as exc:
+                    self._push(
+                        "error",
+                        {
+                            "step_index": idx,
+                            "step_name": step_name,
+                            "message": str(exc),
+                        },
+                    )
+                    if error_mode == "stop":
+                        return
+                    elif error_mode == "skip":
+                        self._push(
+                            "log",
+                            {
+                                "level": "warn",
+                                "message": f"Skipping file due to error in '{step_name}'",
+                            },
+                        )
+                        return
+                    # ignore: continue with current df
+
+            out_path, fmt = self._resolve_output_path(
+                file_path, output_config, return_fmt=True
+            )
+            self._push(
+                "log", {"level": "info", "message": f"Writing output → {out_path}"}
+            )
+            write_dataframe(df, Path(out_path), fmt)
+
+            elapsed = round(time.monotonic() - t_start, 2)
+            self._push(
+                "done",
+                {
+                    "elapsed_s": elapsed,
+                    "rows_out": len(df),
+                    "output_path": out_path,
+                },
+            )
+
+        except Exception as exc:
+            elapsed = round(time.monotonic() - t_start, 2)
+            self._push(
+                "error",
+                {"step_index": -1, "step_name": "init", "message": str(exc)},
+            )
+            self._push(
+                "log",
+                {"level": "err", "message": f"Run failed after {elapsed}s: {exc}"},
+            )
 
     @staticmethod
     def _preset_to_dict(preset: Preset) -> dict:
