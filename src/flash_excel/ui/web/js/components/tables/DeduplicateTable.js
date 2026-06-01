@@ -2,7 +2,9 @@ export default {
   name: 'DeduplicateTable',
   props: { columns: { type: Array, default: () => [] }, payload: { type: Object, default: () => ({}) } },
   emits: ['update:payload'],
+  inject: ['i18n'],
   computed: {
+    t()      { return this.i18n.t; },
     keep()   { return this.payload.keep || 'first'; },
     subset() { return this.payload.subset || []; },
     effectiveColumns() {
@@ -21,7 +23,7 @@ export default {
   },
   template: `
     <div>
-      <div class="panel-sub">Key columns</div>
+      <div class="panel-sub">{{ t('table.dedupe_cols') }}</div>
       <div class="toggle-list">
         <div v-for="col in effectiveColumns" :key="col" class="toggle-row" :class="{ on: isOn(col) }">
           <span class="tr-name">{{ col }}</span>

@@ -2,6 +2,10 @@ export default {
   name: 'ReplaceTable',
   props: { columns: { type: Array, default: () => [] }, payload: { type: Object, default: () => ({}) } },
   emits: ['update:payload'],
+  inject: ['i18n'],
+  computed: {
+    t() { return this.i18n.t; },
+  },
   data() { return { rows: [] }; },
   watch: {
     payload: { immediate: true, handler(v) {
@@ -37,9 +41,9 @@ export default {
         <span class="es-sub">Add a rule to find and replace values.</span>
       </div>
       <template v-else>
-        <div class="panel-sub">Replacements</div>
+        <div class="panel-sub">{{ t('table.replacements') }}</div>
         <div class="rule-head" style="grid-template-columns:1fr 1fr 1fr var(--ctl-h);">
-          <span>Column</span><span>Find</span><span>Replace with</span><span></span>
+          <span>{{ t('table.column') }}</span><span>Find</span><span>Replace with</span><span></span>
         </div>
         <div class="rule-list">
           <div v-for="(r, i) in rows" :key="i" class="rule-row" style="grid-template-columns:1fr 1fr 1fr var(--ctl-h);">
@@ -59,7 +63,7 @@ export default {
       </template>
       <button class="add-rule" @click="addRow">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        Add replacement
+        {{ t('table.add_rule') }}
       </button>
     </div>
   `,

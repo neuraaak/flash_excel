@@ -2,7 +2,9 @@ export default {
   name: 'SelectTable',
   props: { columns: { type: Array, default: () => [] }, payload: { type: Object, default: () => ({}) } },
   emits: ['update:payload'],
+  inject: ['i18n'],
   computed: {
+    t() { return this.i18n.t; },
     effectiveColumns() {
       return this.columns.length ? this.columns : (this.payload.columns || []);
     },
@@ -23,7 +25,7 @@ export default {
   template: `
     <div>
       <div class="row-between" style="margin-bottom:10px;">
-        <span class="panel-sub" style="margin:0;">Columns to keep</span>
+        <span class="panel-sub" style="margin:0;">{{ t('table.keep_cols') }}</span>
         <span style="font-size:var(--fs-xs);color:var(--text_secondary);">{{ selected.length }} of {{ effectiveColumns.length }} kept</span>
       </div>
       <div class="toggle-list">

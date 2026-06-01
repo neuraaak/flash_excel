@@ -2,6 +2,10 @@ export default {
   name: 'ComputedTable',
   props: { columns: { type: Array, default: () => [] }, payload: { type: Object, default: () => ({}) } },
   emits: ['update:payload'],
+  inject: ['i18n'],
+  computed: {
+    t() { return this.i18n.t; },
+  },
   data() { return { localTarget: '', localExpression: '' }; },
   watch: {
     payload: { immediate: true, handler(v) { this.localTarget = v.target || ''; this.localExpression = v.expression || ''; } },
@@ -15,10 +19,10 @@ export default {
   },
   template: `
     <div>
-      <div class="panel-sub">Computed column</div>
+      <div class="panel-sub">{{ t('table.computed') }}</div>
       <div class="compute-card">
         <div class="cc-head">
-          <input class="input" v-model="localTarget" placeholder="New column name" @input="emit" />
+          <input class="input" v-model="localTarget" :placeholder="t('table.target')" @input="emit" />
         </div>
         <textarea class="textarea" v-model="localExpression" placeholder='col("first") + " " + col("last")' @input="emit"></textarea>
         <div class="chips">

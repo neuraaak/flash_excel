@@ -11,6 +11,10 @@ export default {
   name: 'FilterTable',
   props: { columns: { type: Array, default: () => [] }, payload: { type: Object, default: () => ({}) } },
   emits: ['update:payload'],
+  inject: ['i18n'],
+  computed: {
+    t() { return this.i18n.t; },
+  },
   data() { return { combine: 'AND', conditions: [], ops: OPS }; },
   watch: {
     payload: { immediate: true, handler(v) {
@@ -56,7 +60,7 @@ export default {
               <option v-for="op in ops" :key="op.value" :value="op.value">{{ op.label }}</option>
             </select>
           </span>
-          <input class="input" v-model="c.value" placeholder="Value" @input="emit" />
+          <input class="input" v-model="c.value" :placeholder="t('table.value')" @input="emit" />
           <button class="rule-del" @click="removeRow(i)" title="Remove">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
           </button>
@@ -64,7 +68,7 @@ export default {
       </div>
       <button class="add-rule" @click="addRow">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        Add condition
+        {{ t('table.add_rule') }}
       </button>
     </div>
   `,

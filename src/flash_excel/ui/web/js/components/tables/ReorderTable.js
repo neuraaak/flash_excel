@@ -2,6 +2,10 @@ export default {
   name: 'ReorderTable',
   props: { columns: { type: Array, default: () => [] }, payload: { type: Object, default: () => ({}) } },
   emits: ['update:payload'],
+  inject: ['i18n'],
+  computed: {
+    t() { return this.i18n.t; },
+  },
   data() { return { order: [] }; },
   watch: {
     columns: { immediate: true, handler(v) { if (!this.order.length && v.length) this.order = [...v]; } },
@@ -22,7 +26,7 @@ export default {
   },
   template: `
     <div>
-      <div class="panel-sub">Column order</div>
+      <div class="panel-sub">{{ t('table.col_order') }}</div>
       <div class="order-list">
         <div v-for="(col, i) in order" :key="col" class="order-row">
           <span class="order-grip" title="Reorder">

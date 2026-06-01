@@ -2,6 +2,10 @@ export default {
   name: 'SortTable',
   props: { columns: { type: Array, default: () => [] }, payload: { type: Object, default: () => ({}) } },
   emits: ['update:payload'],
+  inject: ['i18n'],
+  computed: {
+    t() { return this.i18n.t; },
+  },
   data() { return { rows: [] }; },
   watch: {
     payload: { immediate: true, handler(v) {
@@ -21,7 +25,7 @@ export default {
   },
   template: `
     <div>
-      <div class="panel-sub">Sort keys</div>
+      <div class="panel-sub">{{ t('table.sort_keys') }}</div>
       <div class="rule-list">
         <div v-for="(r, i) in rows" :key="i" class="rule-row" style="grid-template-columns:1fr auto var(--ctl-h);">
           <span class="select-wrap">
@@ -31,8 +35,8 @@ export default {
             </select>
           </span>
           <span class="seg">
-            <button :class="{ active: !r.desc }" @click="setDir(i, false)">Asc</button>
-            <button :class="{ active: r.desc }"  @click="setDir(i, true)">Desc</button>
+            <button :class="{ active: !r.desc }" @click="setDir(i, false)">{{ t('table.asc') }}</button>
+            <button :class="{ active: r.desc }"  @click="setDir(i, true)">{{ t('table.desc') }}</button>
           </span>
           <button class="rule-del" @click="removeRow(i)" title="Remove">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>
@@ -41,7 +45,7 @@ export default {
       </div>
       <button class="add-rule" @click="addRow">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        Add sort key
+        {{ t('table.add_rule') }}
       </button>
       <div class="panel-hint">Keys apply top to bottom — the first is the primary sort.</div>
     </div>

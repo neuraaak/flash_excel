@@ -2,7 +2,9 @@ export default {
   name: 'CleanTable',
   props: { columns: { type: Array, default: () => [] }, payload: { type: Object, default: () => ({}) } },
   emits: ['update:payload'],
+  inject: ['i18n'],
   computed: {
+    t() { return this.i18n.t; },
     selected() { return this.payload.columns || []; },
     effectiveColumns() {
       return this.columns.length ? this.columns : this.selected;
@@ -19,7 +21,7 @@ export default {
   },
   template: `
     <div>
-      <div class="panel-sub">Trim whitespace on</div>
+      <div class="panel-sub">{{ t('table.cols_clean') }}</div>
       <div class="toggle-list">
         <div v-for="col in effectiveColumns" :key="col" class="toggle-row" :class="{ on: isOn(col) }">
           <span class="tr-name">{{ col }}</span>

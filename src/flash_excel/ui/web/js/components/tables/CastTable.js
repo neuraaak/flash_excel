@@ -4,6 +4,10 @@ export default {
   name: 'CastTable',
   props: { columns: { type: Array, default: () => [] }, payload: { type: Object, default: () => ({}) } },
   emits: ['update:payload'],
+  inject: ['i18n'],
+  computed: {
+    t() { return this.i18n.t; },
+  },
   data() { return { rows: [], castTypes: CAST_TYPES }; },
   watch: {
     payload: { immediate: true, handler(v) {
@@ -23,9 +27,9 @@ export default {
   },
   template: `
     <div>
-      <div class="panel-sub">Type casting</div>
+      <div class="panel-sub">{{ t('table.type_casts') }}</div>
       <div class="rule-head" style="grid-template-columns:1fr 1fr var(--ctl-h);">
-        <span>Column</span><span>Target type</span><span></span>
+        <span>{{ t('table.column') }}</span><span>{{ t('table.type') }}</span><span></span>
       </div>
       <div class="rule-list">
         <div v-for="(r, i) in rows" :key="i" class="rule-row" style="grid-template-columns:1fr 1fr var(--ctl-h);">
@@ -37,7 +41,7 @@ export default {
           </span>
           <span class="select-wrap">
             <select v-model="r.type" @change="emit">
-              <option v-for="t in castTypes" :key="t" :value="t">{{ t }}</option>
+              <option v-for="ct in castTypes" :key="ct" :value="ct">{{ ct }}</option>
             </select>
           </span>
           <button class="rule-del" @click="removeRow(i)" title="Remove">
@@ -47,7 +51,7 @@ export default {
       </div>
       <button class="add-rule" @click="addRow">
         <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
-        Add cast
+        {{ t('table.add_rule') }}
       </button>
     </div>
   `,
