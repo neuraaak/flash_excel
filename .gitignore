@@ -251,6 +251,7 @@ tmpclaude-*
 credentials/
 keys/
 .tufup/keys/
+.tufup/repo/targets/
 
 # =============================================================================
 # PATTERNS ADDITIONNELS
