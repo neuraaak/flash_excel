@@ -127,6 +127,62 @@ def _collect_repo_files() -> list[Path]:
     return files
 
 
+INNO_SETUP_ISS = Path(__file__).parent / "installer.iss"
+
+
+def _find_iscc() -> Path | None:
+    """Locate iscc.exe via PATH, env var INNO_SETUP_PATH, or default install locations."""
+    import os
+
+    # 1. Dans le PATH (cas nominal)
+    exe = shutil.which("ISCC") or shutil.which("iscc")
+    if exe:
+        return Path(exe)
+    # 2. Variable d'env explicite
+    env_path = os.environ.get("INNO_SETUP_PATH")
+    if env_path:
+        p = Path(env_path) / "ISCC.exe"
+        if p.exists():
+            return p
+    # 3. Emplacements standards
+    candidates = [
+        Path(os.environ.get("LOCALAPPDATA", ""))
+        / "Programs"
+        / "Inno Setup 6"
+        / "ISCC.exe",
+        Path(r"C:\Program Files (x86)\Inno Setup 6\ISCC.exe"),
+        Path(r"C:\Program Files\Inno Setup 6\ISCC.exe"),
+    ]
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
+def _build_installer_exe(version: str) -> Path | None:
+    """Compile installer.iss with Inno Setup. Returns the output .exe path or None."""
+    iscc = _find_iscc()
+    if iscc is None:
+        print("WARNING: Inno Setup not found — skipping installer build.")
+        print("  Install from https://jrsoftware.org/isdl.php or set INNO_SETUP_PATH.")
+        return None
+    result = subprocess.run(  # noqa: S603
+        [str(iscc), f"/DMyAppVersion={version}", str(INNO_SETUP_ISS)],
+        check=False,
+    )
+    if result.returncode != 0:
+        raise RuntimeError(f"Inno Setup compilation failed (exit {result.returncode})")
+    return PROJECT_ROOT / "dist" / f"Flash-Excel-{version}-Setup.exe"
+
+
+def _build_installer_zip(app_name: str, version: str) -> Path:
+    """Zip dist/Flash-Excel/ into a distributable archive for first-time installs."""
+    zip_name = f"{app_name}-{version}-windows-x64"
+    zip_path = PROJECT_ROOT / "dist" / zip_name
+    shutil.make_archive(str(zip_path), "zip", DIST_DIR.parent, DIST_DIR.name)
+    return zip_path.with_suffix(".zip")
+
+
 # ///////////////////////////////////////////////////////////////
 # MAIN
 # ///////////////////////////////////////////////////////////////
@@ -195,7 +251,11 @@ def main() -> int:
         tag = f"v{version}"
         _gh_ensure_release(tag=tag, version=version)
         print(f"Uploading to GitHub Release {tag}...")
-        _gh_upload(tag=tag, files=_collect_repo_files())
+        installer_zip = _build_installer_zip(app_name, version)
+        print(f"Installer zip: {installer_zip.name}")
+        installer_exe = _build_installer_exe(version)
+        extra = [installer_exe] if installer_exe else []
+        _gh_upload(tag=tag, files=[installer_zip, *extra, *_collect_repo_files()])
         print("Upload complete.")
     else:
         print("Skipping GitHub upload (--skip-upload).")

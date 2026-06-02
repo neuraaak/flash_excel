@@ -5,10 +5,19 @@
 
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
-# src/flash_excel/paths.py  →  src/flash_excel/  →  src/  →  project root
-PROJECT_ROOT: Path = Path(__file__).parent.parent.parent
+
+def _get_base_dir() -> Path:
+    # En mode compilé PyInstaller, les fichiers sont extraits dans sys._MEIPASS
+    # En mode développement, on remonte depuis src/flash_excel/ vers la racine
+    if getattr(sys, "frozen", False):
+        return Path(sys._MEIPASS)  # type: ignore[attr-defined]
+    return Path(__file__).parent.parent.parent
+
+
+PROJECT_ROOT: Path = _get_base_dir()
 
 BIN_DIR: Path = PROJECT_ROOT / "bin"
 

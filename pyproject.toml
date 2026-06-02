@@ -7,6 +7,9 @@
 requires = ["hatchling"]
 build-backend = "hatchling.build"
 
+[tool.hatch.metadata]
+allow-direct-references = true
+
 # /////////////////////////////////////////////////////////////////////
 # 📦 PROJECT METADATA
 # Package information, version, authors, and classifiers
@@ -79,7 +82,7 @@ dev = [
     # Build and distribution
     "build>=1.0.0",
     "twine>=4.0.0",
-    "ezcompiler>=2.3.0",
+    "ezcompiler[pyinstaller]>=2.3.0",
 ]
 test = [
     "pytest>=7.0.0",
@@ -153,9 +156,10 @@ repo_path = "releases"
 [tool.ezcompiler.compiler_options]
 onefile = false                   # Mode dossier (onedir) — pas de .exe unique
 contents-directory = "."          # Désactive _internal: tout à plat dans dist/
-collect-all = "webview"           # Collecte tous les assets/hooks de pywebview
+collect-all = ["webview", "fastexcel", "polars", "_polars_runtime_32", "pydantic_core"]
 collect-data = "flash_excel"      # Collecte les données du package (web/, assets...)
 exclude-module = "webview.platforms.android"  # Pas de module Android sous Windows
+additional-hooks-dir = "hooks"    # Hook files pour les extensions Rust/C (fastexcel, polars, pydantic_core)
 # Note: compiler_options est un dict (une valeur par clé).
 # Pour des flags supplémentaires (ex: hidden-import), les ajouter ici
 # avec des noms distincts, ex: hidden-import = "webview.platforms.winforms"
